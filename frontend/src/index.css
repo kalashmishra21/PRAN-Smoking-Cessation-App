@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.serene-gradient {
+  background: linear-gradient(135deg, #fbf8ff 0%, #e6e8ff 100%);
+}
+
+.input-focus-ring:focus {
+  box-shadow: 0 0 0 4px rgba(45, 90, 238, 0.15);
+  border-color: #2D5AEE;
+}
+
+.ambient-shadow {
+  box-shadow: 0px 4px 20px rgba(45, 90, 238, 0.08);
+}
+
+.card-shadow {
+  box-shadow: 0px 4px 20px rgba(45, 90, 238, 0.08);
+}
+
+.progress-gradient {
+  background: linear-gradient(90deg, #2D5AEE 0%, #4DE082 100%);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.ai-bubble-gradient {
+  background: linear-gradient(135deg, #f3f2ff 0%, #e6e8ff 100%);
+}
+
+/* Hide scrollbar for quick actions row */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
