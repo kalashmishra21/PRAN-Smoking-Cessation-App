@@ -13,7 +13,7 @@ const router = express.Router();
 // POST /api/chat - Send message to AI bot
 router.post('/chat', auth, sendMessage);
 
-// GET /api/chat-history - Get user's chat history
-router.get('/chat-history', auth, getChatHistory);
+// GET /api/chat/history - Get user's chat history
+router.get('/chat/history', auth, getChatHistory);
 
 module.exports = router;

@@ -32,6 +32,20 @@ const userSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 0
+  },
+  profile_image: {
+    type: String,
+    default: 'https://ui-avatars.com/api/?name=User&background=2D5AEE&color=fff'
+  },
+  cost_per_pack: {
+    type: Number,
+    default: 10,
+    comment: 'Cost per piece (cigarette) in INR'
+  },
+  theme: {
+    type: String,
+    enum: ['light', 'dark'],
+    default: 'light'
   }
 }, {
   timestamps: true

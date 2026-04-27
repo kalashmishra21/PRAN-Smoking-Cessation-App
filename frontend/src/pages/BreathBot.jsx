@@ -1,56 +1,19 @@
 /**
  * BreathBot Page - Full-screen chat interface with PRAN's AI recovery companion
  * Displays sidebar, sticky chat header, scrollable message area, and fixed input footer
- * Manages message state with useState; simulates bot replies via setTimeout
+ * Fetches real chat history and sends messages to backend API
  * Returns complete page layout with all chat sub-components
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import {
   ChatContainer,
   QuickActions,
   ChatInput
 } from '../components/BreathBotComponents';
-
-/**
- * Initial static messages shown when the page first loads
- * Contains the opening bot greeting, user reply, and bot follow-up
- * Each message has id, sender, text, and time fields
- * Returns array of 3 message objects
- */
-const INITIAL_MESSAGES = [
-  {
-    id: 1,
-    sender: 'bot',
-    text: "Hello! I'm BreathBot, your recovery companion. Quitting is a journey of a thousand breaths, and I'm here for every single one. How are you feeling right now?",
-    time: '09:41 AM',
-  },
-  {
-    id: 2,
-    sender: 'user',
-    text: "I'm feeling a bit restless. It's been about 3 days since my last cigarette and the morning routine is tough.",
-    time: '09:42 AM',
-  },
-  {
-    id: 3,
-    sender: 'bot',
-    text: "Three days is a huge milestone! That's when your nicotine levels have fully left your body—your restlessness is actually your body healing itself.\n\nWhy don't we try a 2-minute \"Box Breathing\" exercise together? It helps reset that morning anxiety.",
-    time: '09:42 AM',
-  },
-];
-
-/**
- * Simulated bot replies for new user messages
- * Cycles through these responses when user sends any message
- * Provides varied, encouraging responses to keep conversation natural
- * Returns array of reply strings
- */
-const BOT_REPLIES = [
-  "You're doing great. Try a breathing exercise — inhale for 4 counts, hold for 4, exhale for 4. Repeat 3 times. 💙",
-  "Every craving lasts only 3–5 minutes. You've already beaten hundreds of them. This one is no different.",
-  "Remember why you started. Your lungs are already healing — 72 hours in, your bronchial tubes are relaxing.",
-  "Let's try the 5-4-3-2-1 grounding technique: name 5 things you can see, 4 you can touch, 3 you can hear.",
-];
+import { chatAPI } from '../services/api';
 
 /**
  * Formats the current time as HH:MM AM/PM string
@@ -66,37 +29,78 @@ const getCurrentTime = () => {
 };
 
 const BreathBot = () => {
-  /**
-   * State for the full list of chat messages
-   * Initialized with the 3 static opening messages
-   * Updated when user sends a message or bot replies
-   * Returns array of message objects
-   */
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
-
-  /**
-   * State for the current text in the chat input field
-   * Controlled input value, cleared after each send
-   * Takes string value from input onChange
-   * Returns string
-   */
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
-
-  /**
-   * State to track if bot is currently "typing"
-   * Used to prevent multiple simultaneous bot replies
-   * Set true when user sends, false after bot reply arrives
-   * Returns boolean
-   */
   const [isBotTyping, setIsBotTyping] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Redirect if not authenticated (after auth loading completes)
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated()) {
+      navigate('/auth');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
+  // Fetch chat history on mount (only if authenticated)
+  useEffect(() => {
+    if (!authLoading && isAuthenticated()) {
+      fetchChatHistory();
+    }
+  }, [authLoading, isAuthenticated]);
 
   /**
-   * Sends a new user message and triggers a simulated bot reply
-   * Adds user message immediately, then adds bot reply after 1.2s delay
+   * Fetch chat history from backend
+   * Loads previous conversation messages
+   */
+  const fetchChatHistory = async () => {
+    try {
+      setLoading(true);
+      const response = await chatAPI.getChatHistory();
+      
+      // Transform backend data to match UI format
+      const formattedMessages = response.chat_history.map((msg) => ({
+        id: msg._id,
+        sender: msg.sender,
+        text: msg.message,
+        time: formatTime(msg.timestamp),
+      }));
+      
+      setMessages(formattedMessages);
+    } catch (err) {
+      console.error('Failed to fetch chat history:', err);
+      // Start with welcome message if no history
+      setMessages([
+        {
+          id: 1,
+          sender: 'bot',
+          text: "Hello! I'm BreathBot, your recovery companion. Quitting is a journey of a thousand breaths, and I'm here for every single one. How are you feeling right now?",
+          time: getCurrentTime(),
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Format timestamp to readable time string
+   */
+  const formatTime = (timestamp) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  /**
+   * Sends a new user message and gets bot reply from backend
+   * Adds user message immediately, then fetches bot reply from API
    * Takes optional text override (for quick action buttons)
    * Returns void
    */
-  const handleSend = (textOverride) => {
+  const handleSend = async (textOverride) => {
     const text = textOverride || inputValue.trim();
     if (!text || isBotTyping) return;
 
@@ -111,18 +115,33 @@ const BreathBot = () => {
     setInputValue('');
     setIsBotTyping(true);
 
-    // Simulate bot typing delay then add reply
-    setTimeout(() => {
-      const replyText = BOT_REPLIES[Math.floor(Math.random() * BOT_REPLIES.length)];
+    try {
+      // Send message to backend and get bot response
+      const response = await chatAPI.sendMessage(text);
+      
       const botMessage = {
         id: Date.now() + 1,
         sender: 'bot',
-        text: replyText,
+        text: response.bot_response.message,
+        time: formatTime(response.bot_response.timestamp),
+      };
+      
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (err) {
+      console.error('Failed to send message:', err);
+      
+      // Fallback response on error
+      const errorMessage = {
+        id: Date.now() + 1,
+        sender: 'bot',
+        text: "I'm having trouble connecting right now. Please try again in a moment. 🔄",
         time: getCurrentTime(),
       };
-      setMessages((prev) => [...prev, botMessage]);
+      
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsBotTyping(false);
-    }, 1200);
+    }
   };
 
   /**
@@ -135,6 +154,20 @@ const BreathBot = () => {
     handleSend(action);
   };
 
+  if (loading) {
+    return (
+      <div className="bg-surface text-on-surface min-h-screen flex">
+        <Sidebar activeMenu="breathbot" />
+        <div className="md:ml-64 flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-on-surface-variant">Loading chat...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-surface text-on-surface min-h-screen flex">
       {/* Reused Sidebar with breathbot active */}
@@ -144,28 +177,23 @@ const BreathBot = () => {
       <div className="md:ml-64 flex-1 flex flex-col min-h-screen">
 
         {/* Sticky Chat Header */}
-        <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md flex justify-between items-center h-20 px-8 border-b border-slate-100 shadow-sm">
+        <header className="sticky top-0 z-30 bg-white dark:bg-gray-900 backdrop-blur-md flex justify-between items-center h-20 px-8 border-b border-slate-100 dark:border-gray-700 shadow-sm">
           <div className="flex items-center gap-4">
             {/* Bot avatar icon */}
-            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#2D5AEE] border border-blue-100">
+            <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900 flex items-center justify-center text-[#2D5AEE] dark:text-blue-400 border border-blue-100 dark:border-blue-800">
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
                 robot_2
               </span>
             </div>
             {/* Bot name + status */}
             <div>
-              <h2 className="font-bold text-on-surface text-base font-h3">BreathBot</h2>
-              <p className="text-xs text-secondary font-label-sm flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-secondary inline-block" />
+              <h2 className="font-bold text-on-surface dark:text-gray-100 text-base font-h3">BreathBot</h2>
+              <p className="text-xs text-secondary dark:text-green-400 font-label-sm flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-secondary dark:bg-green-400 inline-block" />
                 Always here to listen
               </p>
             </div>
           </div>
-
-          {/* More options button */}
-          <button className="p-2 rounded-full hover:bg-surface-container transition-colors text-outline">
-            <span className="material-symbols-outlined">more_vert</span>
-          </button>
         </header>
 
         {/* Scrollable chat messages area */}
@@ -176,18 +204,17 @@ const BreathBot = () => {
           {isBotTyping && (
             <div className="px-6 pb-2 max-w-4xl mx-auto w-full">
               <div className="flex gap-4 max-w-[85%]">
-                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 border border-blue-100">
-                  <span className="material-symbols-outlined text-[#2D5AEE] text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
+                <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900 flex items-center justify-center flex-shrink-0 border border-blue-100 dark:border-blue-800">
+                  <span className="material-symbols-outlined text-[#2D5AEE] dark:text-blue-400 text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
                     robot_2
                   </span>
                 </div>
                 <div
-                  className="px-5 py-4 rounded-2xl rounded-tl-none border border-blue-100 flex items-center gap-1"
-                  style={{ background: 'linear-gradient(135deg, #f3f2ff 0%, #e6e8ff 100%)' }}
+                  className="px-5 py-4 rounded-2xl rounded-tl-none border border-blue-100 dark:border-blue-800 flex items-center gap-1 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900"
                 >
-                  <span className="w-2 h-2 rounded-full bg-[#2D5AEE] animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 rounded-full bg-[#2D5AEE] animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 rounded-full bg-[#2D5AEE] animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-[#2D5AEE] dark:bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-[#2D5AEE] dark:bg-blue-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-[#2D5AEE] dark:bg-blue-400 animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
@@ -195,7 +222,7 @@ const BreathBot = () => {
         </div>
 
         {/* Fixed footer: quick actions + input */}
-        <footer className="bg-white/80 backdrop-blur-xl px-6 py-5 border-t border-slate-100">
+        <footer className="bg-white dark:bg-gray-900 backdrop-blur-xl px-6 py-5 border-t border-slate-100 dark:border-gray-700">
           <div className="max-w-4xl mx-auto flex flex-col gap-3">
             {/* Quick reply buttons */}
             <QuickActions onSelect={handleQuickAction} />

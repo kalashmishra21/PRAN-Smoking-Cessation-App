@@ -10,8 +10,8 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-// POST /api/craving - Log a new craving
-router.post('/craving', auth, logCraving);
+// POST /api/cravings - Log a new craving
+router.post('/cravings', auth, logCraving);
 
 // GET /api/cravings - Get user's craving history
 router.get('/cravings', auth, getCravings);

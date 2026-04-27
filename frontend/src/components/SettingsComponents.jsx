@@ -1,44 +1,71 @@
 /**
  * SettingsComponents - All components used in Settings page
- * Contains ProfileCard, QuitJourneyCard, ProPlanCard, and ActionButtons
+ * Contains ProfileCard, QuitJourneyCard, ThemeToggleCard, and ActionButtons
  * Each component is exported individually for use in Settings.jsx
  * Maintains exact UI design with no changes to styling or layout
  */
 
+import { useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
+
 /**
  * ProfileCard Component - User profile section with avatar, name, email, and input fields
  * Displays avatar with camera button, Free Member badge, and editable name/email inputs
- * Takes formData object and onChange handler as props for controlled inputs
+ * Takes formData object, onChange handler, onImageUpload, uploadingImage, and profileImage as props
  * Returns a white rounded card with profile info and two input fields
  */
-export function ProfileCard({ formData, onChange }) {
+export function ProfileCard({ formData, onChange, onImageUpload, uploadingImage, profileImage }) {
+  const profileImageUrl = profileImage 
+    ? `http://localhost:5000${profileImage}`
+    : 'https://lh3.googleusercontent.com/aida-public/AB6AXuAgK7vFHhCDhzscOKShLQL-vc28lF7KWzP61qxR5OfDKN0At1yWg-3pnujpR_kNiCR8Qfa0A25eXKN_FyvMtYe0arE-dSVqKEyNBH7DmFsP_R4rylW5mGuvAU5DgNVAwq77fL-N2tPmEGnWOjEj8y_bmG4zRebuvBaRSlbeaX4LMqv_-8RPDU_AUesKC8N-74Ftldva4DU_pF1MAFP7WyfURgRZBqL_IwuYxVpCR3_BH7HEElmvWcp7_2aS291SekBpeOBwJEscnlc';
+
   return (
-    <section className="bg-white rounded-[32px] p-8 shadow-[0px_4px_20px_rgba(45,90,238,0.08)]">
+    <section className="bg-white dark:bg-gray-800 rounded-[32px] p-8 shadow-[0px_4px_20px_rgba(45,90,238,0.08)]">
       {/* Avatar + identity row */}
       <div className="flex items-center gap-6 mb-8">
         {/* Avatar with camera overlay button */}
         <div className="relative group flex-shrink-0">
           <img
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgK7vFHhCDhzscOKShLQL-vc28lF7KWzP61qxR5OfDKN0At1yWg-3pnujpR_kNiCR8Qfa0A25eXKN_FyvMtYe0arE-dSVqKEyNBH7DmFsP_R4rylW5mGuvAU5DgNVAwq77fL-N2tPmEGnWOjEj8y_bmG4zRebuvBaRSlbeaX4LMqv_-8RPDU_AUesKC8N-74Ftldva4DU_pF1MAFP7WyfURgRZBqL_IwuYxVpCR3_BH7HEElmvWcp7_2aS291SekBpeOBwJEscnlc"
+            src={profileImageUrl}
             alt="User Profile"
-            className="w-24 h-24 rounded-full object-cover border-4 border-surface-container-low"
+            className="w-24 h-24 rounded-full object-cover border-4 border-surface-container-low dark:border-gray-700"
+            onError={(e) => {
+              e.target.src = 'https://lh3.googleusercontent.com/aida-public/AB6AXuAgK7vFHhCDhzscOKShLQL-vc28lF7KWzP61qxR5OfDKN0At1yWg-3pnujpR_kNiCR8Qfa0A25eXKN_FyvMtYe0arE-dSVqKEyNBH7DmFsP_R4rylW5mGuvAU5DgNVAwq77fL-N2tPmEGnWOjEj8y_bmG4zRebuvBaRSlbeaX4LMqv_-8RPDU_AUesKC8N-74Ftldva4DU_pF1MAFP7WyfURgRZBqL_IwuYxVpCR3_BH7HEElmvWcp7_2aS291SekBpeOBwJEscnlc';
+            }}
           />
           {/* Camera icon button overlaid on avatar */}
-          <button className="absolute bottom-0 right-0 p-1.5 bg-[#2D5AEE] text-white rounded-full shadow-lg hover:scale-105 transition-transform">
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-              photo_camera
-            </span>
-          </button>
+          <input
+            type="file"
+            id="profile-image-upload"
+            accept="image/*"
+            onChange={onImageUpload}
+            className="hidden"
+            disabled={uploadingImage}
+          />
+          <label
+            htmlFor="profile-image-upload"
+            className={`absolute bottom-0 right-0 p-1.5 bg-[#2D5AEE] text-white rounded-full shadow-lg hover:scale-105 transition-transform cursor-pointer ${uploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {uploadingImage ? (
+              <span className="material-symbols-outlined animate-spin" style={{ fontSize: '18px' }}>
+                progress_activity
+              </span>
+            ) : (
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                photo_camera
+              </span>
+            )}
+          </label>
         </div>
 
         {/* Name, email, badge */}
         <div>
-          <h3 className="font-h3 text-on-surface" style={{ fontSize: '24px', fontWeight: 600 }}>
-            Alex Rivers
+          <h3 className="font-h3 text-on-surface dark:text-gray-100" style={{ fontSize: '24px', fontWeight: 600 }}>
+            {formData.name || 'User'}
           </h3>
-          <p className="text-on-surface-variant text-sm mt-0.5">alex.rivers@recovery.com</p>
+          <p className="text-on-surface-variant dark:text-gray-400 text-sm mt-0.5">{formData.email}</p>
           {/* Free Member badge */}
-          <span className="inline-flex items-center mt-2 px-3 py-1 bg-secondary-container text-on-secondary-fixed-variant text-xs font-semibold rounded-full">
+          <span className="inline-flex items-center mt-2 px-3 py-1 bg-secondary-container dark:bg-gray-700 text-on-secondary-fixed-variant dark:text-gray-300 text-xs font-semibold rounded-full">
             Free Member
           </span>
         </div>
@@ -48,27 +75,27 @@ export function ProfileCard({ formData, onChange }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Full Name input */}
         <div className="space-y-2">
-          <label className="block text-xs font-medium text-on-surface-variant px-1">
+          <label className="block text-xs font-medium text-on-surface-variant dark:text-gray-400 px-1">
             Full Name
           </label>
           <input
             type="text"
             value={formData.name}
             onChange={(e) => onChange('name', e.target.value)}
-            className="w-full h-12 px-4 border border-outline-variant rounded-xl focus:ring-2 focus:ring-[#2D5AEE] focus:border-transparent outline-none transition-all text-on-surface"
+            className="w-full h-12 px-4 border border-outline-variant dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#2D5AEE] focus:border-transparent outline-none transition-all text-on-surface dark:text-gray-100 bg-white dark:bg-gray-700"
           />
         </div>
 
         {/* Email Address input - DISABLED (cannot be changed) */}
         <div className="space-y-2">
-          <label className="block text-xs font-medium text-on-surface-variant px-1">
+          <label className="block text-xs font-medium text-on-surface-variant dark:text-gray-400 px-1">
             Email Address (Cannot be changed)
           </label>
           <input
             type="email"
             value={formData.email}
             disabled
-            className="w-full h-12 px-4 border border-outline-variant rounded-xl outline-none transition-all text-on-surface bg-slate-50 cursor-not-allowed opacity-75"
+            className="w-full h-12 px-4 border border-outline-variant dark:border-gray-600 rounded-xl outline-none transition-all text-on-surface dark:text-gray-100 bg-slate-50 dark:bg-gray-900 cursor-not-allowed opacity-75"
           />
         </div>
       </div>
@@ -84,10 +111,10 @@ export function ProfileCard({ formData, onChange }) {
  */
 export function QuitJourneyCard({ formData, onChange }) {
   return (
-    <section className="bg-white rounded-[32px] p-8 shadow-[0px_4px_20px_rgba(45,90,238,0.08)]">
+    <section className="bg-white dark:bg-gray-800 rounded-[32px] p-8 shadow-[0px_4px_20px_rgba(45,90,238,0.08)]">
       {/* Section heading with icon */}
       <h3
-        className="font-h3 text-on-surface mb-6 flex items-center gap-2"
+        className="font-h3 text-on-surface dark:text-gray-100 mb-6 flex items-center gap-2"
         style={{ fontSize: '24px', fontWeight: 600 }}
       >
         <span className="material-symbols-outlined text-[#2D5AEE]">track_changes</span>
@@ -95,51 +122,151 @@ export function QuitJourneyCard({ formData, onChange }) {
       </h3>
 
       <div className="space-y-6">
-        {/* Quit Date + Habit Intensity row */}
+        {/* Quit Date + Cigarettes Per Day row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Quit Date picker */}
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-on-surface-variant px-1">
+            <label className="block text-xs font-medium text-on-surface-variant dark:text-gray-400 px-1">
               Quit Date
             </label>
             <input
               type="date"
               value={formData.quit_date}
               onChange={(e) => onChange('quit_date', e.target.value)}
-              className="w-full h-12 px-4 border border-outline-variant rounded-xl focus:ring-2 focus:ring-[#2D5AEE] focus:border-transparent outline-none transition-all text-on-surface"
+              className="w-full h-12 px-4 border border-outline-variant dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#2D5AEE] focus:border-transparent outline-none transition-all text-on-surface dark:text-gray-100 bg-white dark:bg-gray-700"
             />
           </div>
 
-          {/* Habit Intensity dropdown */}
+          {/* Cigarettes Per Day input */}
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-on-surface-variant px-1">
-              Habit Intensity (Daily)
+            <label className="block text-xs font-medium text-on-surface-variant dark:text-gray-400 px-1">
+              Cigarettes Per Day
             </label>
-            <select
-              value={formData.habit_intensity}
-              onChange={(e) => onChange('habit_intensity', e.target.value)}
-              className="w-full h-12 px-4 border border-outline-variant rounded-xl focus:ring-2 focus:ring-[#2D5AEE] focus:border-transparent outline-none transition-all text-on-surface bg-white appearance-none"
-              style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23747687' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 16px center' }}
-            >
-              <option value="social">Social (1-5)</option>
-              <option value="moderate">Moderate (5-15)</option>
-              <option value="heavy">Heavy (15+)</option>
-            </select>
+            <input
+              type="number"
+              min="0"
+              value={formData.cigarettes_per_day}
+              onChange={(e) => onChange('cigarettes_per_day', e.target.value)}
+              className="w-full h-12 px-4 border border-outline-variant dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#2D5AEE] focus:border-transparent outline-none transition-all text-on-surface dark:text-gray-100 bg-white dark:bg-gray-700"
+            />
           </div>
+        </div>
+
+        {/* Cost Per Piece input */}
+        <div className="space-y-2">
+          <label className="block text-xs font-medium text-on-surface-variant dark:text-gray-400 px-1">
+            Cost Per Piece (₹)
+          </label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={formData.cost_per_pack}
+            onChange={(e) => onChange('cost_per_pack', e.target.value)}
+            className="w-full h-12 px-4 border border-outline-variant dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#2D5AEE] focus:border-transparent outline-none transition-all text-on-surface dark:text-gray-100 bg-white dark:bg-gray-700"
+          />
         </div>
 
         {/* Primary Motivation textarea */}
         <div className="space-y-2">
-          <label className="block text-xs font-medium text-on-surface-variant px-1">
+          <label className="block text-xs font-medium text-on-surface-variant dark:text-gray-400 px-1">
             Primary Motivation
           </label>
           <textarea
             rows={3}
             value={formData.motivation}
             onChange={(e) => onChange('motivation', e.target.value)}
-            className="w-full px-4 py-3 border border-outline-variant rounded-xl focus:ring-2 focus:ring-[#2D5AEE] focus:border-transparent outline-none transition-all text-on-surface resize-none"
+            className="w-full px-4 py-3 border border-outline-variant dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#2D5AEE] focus:border-transparent outline-none transition-all text-on-surface dark:text-gray-100 bg-white dark:bg-gray-700 resize-none"
           />
         </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * ThemeToggleCard Component - Dark/Light mode toggle section
+ * Displays theme preference toggle with sun/moon icons
+ * Uses ThemeContext for global theme state
+ * Saves theme to user profile in database
+ * Returns a white rounded card with theme toggle switch
+ */
+export function ThemeToggleCard() {
+  const { theme, toggleTheme, isDark, setUserTheme } = useTheme();
+  const [saving, setSaving] = useState(false);
+
+  const handleToggle = async () => {
+    const newTheme = isDark ? 'light' : 'dark';
+    
+    // Update UI immediately
+    toggleTheme();
+    
+    // Save to database
+    setSaving(true);
+    try {
+      const { userAPI } = await import('../services/api');
+      await userAPI.updateProfile({ theme: newTheme });
+      
+      // Update user in localStorage
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        user.theme = newTheme;
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+    } catch (error) {
+      console.error('Failed to save theme:', error);
+      // Revert on error
+      toggleTheme();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="bg-white dark:bg-gray-800 rounded-[32px] p-8 shadow-[0px_4px_20px_rgba(45,90,238,0.08)]">
+      {/* Section heading with icon */}
+      <h3
+        className="font-h3 text-on-surface dark:text-gray-100 mb-6 flex items-center gap-2"
+        style={{ fontSize: '24px', fontWeight: 600 }}
+      >
+        <span className="material-symbols-outlined text-[#2D5AEE]">palette</span>
+        Appearance
+      </h3>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="material-symbols-outlined text-on-surface-variant dark:text-gray-400" style={{ fontSize: '28px' }}>
+            {isDark ? 'dark_mode' : 'light_mode'}
+          </span>
+          <div>
+            <p className="text-on-surface dark:text-gray-100 font-medium">Theme Mode</p>
+            <p className="text-on-surface-variant dark:text-gray-400 text-sm">
+              {isDark ? 'Dark mode is active' : 'Light mode is active'}
+            </p>
+          </div>
+        </div>
+
+        {/* Toggle Switch */}
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative w-16 h-8 rounded-full transition-colors duration-300 ${
+            isDark ? 'bg-[#2D5AEE]' : 'bg-slate-300'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <div
+            className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 flex items-center justify-center ${
+              isDark ? 'translate-x-8' : 'translate-x-0'
+            }`}
+          >
+            {saving && (
+              <span className="material-symbols-outlined text-[#2D5AEE] animate-spin" style={{ fontSize: '14px' }}>
+                progress_activity
+              </span>
+            )}
+          </div>
+        </button>
       </div>
     </section>
   );
@@ -220,18 +347,28 @@ export function ProPlanCard() {
 /**
  * ActionButtons Component - Bottom action bar with Save and Logout buttons
  * Displays "Save All Changes" (blue filled) and "Logout" (red outline) buttons
- * Takes onSave and onLogout handler functions as props
+ * Takes onSave, onLogout handler functions and saving state as props
  * Returns a flex row with both buttons spaced apart
  */
-export function ActionButtons({ onSave, onLogout }) {
+export function ActionButtons({ onSave, onLogout, saving }) {
   return (
     <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4">
       {/* Save All Changes — blue filled button */}
       <button
         onClick={onSave}
-        className="w-full md:w-auto px-8 py-3 bg-[#2D5AEE] text-white font-bold rounded-2xl shadow-xl hover:opacity-90 active:scale-95 transition-all"
+        disabled={saving}
+        className={`w-full md:w-auto px-8 py-3 bg-[#2D5AEE] text-white font-bold rounded-2xl shadow-xl hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2 ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
-        Save All Changes
+        {saving ? (
+          <>
+            <span className="material-symbols-outlined animate-spin" style={{ fontSize: '20px' }}>
+              progress_activity
+            </span>
+            Saving...
+          </>
+        ) : (
+          'Save All Changes'
+        )}
       </button>
 
       {/* Logout — red outline button */}

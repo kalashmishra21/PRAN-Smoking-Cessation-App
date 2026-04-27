@@ -1,9 +1,12 @@
 /**
  * Dashboard Page Component - Main dashboard view for PRAN app
  * Displays user stats, health timeline, achievements, and quick actions
- * Uses hardcoded data for now, will connect to backend API later
+ * Fetches real data from backend API
  * Returns complete dashboard layout with sidebar and main content area
  */
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import {
   TopHeader,
@@ -14,34 +17,70 @@ import {
   Achievements,
   ExtraCards
 } from '../components/DashboardComponents';
+import { dashboardAPI } from '../services/api';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   /**
-   * Hardcoded dashboard data for static display
-   * Contains user stats, milestones, and achievements
-   * Will be replaced with API data from backend
-   * Returns object with all dashboard metrics
+   * Fetch dashboard data from API on component mount
+   * Redirects to auth if not authenticated
+   * Loads all dashboard metrics from backend
    */
-  const dashboardData = {
-    userName: 'Alex',
-    completionPercent: 24,
-    dayStreak: 14,
-    stats: {
-      smokeFree: 14,
-      moneySaved: 248.50,
-      cigarettesAvoided: 280
+  useEffect(() => {
+    // Wait for auth to load first
+    if (authLoading) return;
+    
+    if (!isAuthenticated()) {
+      navigate('/auth');
+      return;
     }
-  };
+
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const data = await dashboardAPI.getDashboard();
+        setDashboardData(data);
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+        alert('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [isAuthenticated, authLoading, navigate]);
 
   /**
    * Handle log craving action from action card
-   * Logs craving action to console
-   * Takes no parameters
-   * Returns void, will trigger craving log modal/page
+   * Navigates to craving log page
    */
   const handleLogCraving = () => {
-    console.log('Log craving action triggered from dashboard');
+    navigate('/cravings');
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-on-surface-variant">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-on-surface-variant">No data available</p>
+      </div>
+    );
+  }
 
   return (
     <div className="text-on-surface bg-surface min-h-screen">
@@ -52,27 +91,31 @@ const Dashboard = () => {
       <main className="ml-64 min-h-screen p-8 max-w-screen-2xl mx-auto">
         {/* Header Section */}
         <TopHeader
-          userName={dashboardData.userName}
-          completionPercent={dashboardData.completionPercent}
-          dayStreak={dashboardData.dayStreak}
+          userName={dashboardData.user.name}
+          completionPercent={Math.min(100, (dashboardData.progress.smoke_free_days / 365) * 100)}
+          dayStreak={dashboardData.progress.smoke_free_days}
         />
 
         {/* Stats Grid (Bento Style) */}
-        <StatsCards stats={dashboardData.stats} />
+        <StatsCards stats={{
+          smokeFree: dashboardData.progress.smoke_free_days,
+          moneySaved: dashboardData.progress.money_saved,
+          cigarettesAvoided: dashboardData.progress.cigarettes_avoided
+        }} />
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Health Recovery Timeline (Left Column) */}
           <section className="lg:col-span-8 space-y-8">
-            <RecoveryTimeline />
-            <ExtraCards />
+            <RecoveryTimeline milestones={dashboardData.health_milestones} />
+            <ExtraCards cravings={dashboardData.cravings} />
           </section>
 
           {/* Right Column */}
           <section className="lg:col-span-4 space-y-8">
             <BreathBotCard />
             <ActionCard onLogCraving={handleLogCraving} />
-            <Achievements />
+            <Achievements achievements={dashboardData.achievements} />
           </section>
         </div>
 

@@ -214,7 +214,7 @@ export function MoneySavedCard() {
         Money Saved
       </h2>
       <p className="text-on-surface-variant text-sm mb-6">
-        Total savings: <span className="text-[#2D5AEE] font-bold text-lg">$1,240</span>
+        Total savings: <span className="text-[#2D5AEE] font-bold text-lg">₹1,240</span>
       </p>
 
       <div className="flex items-end justify-between gap-4 flex-1 min-h-[160px]">
@@ -245,7 +245,7 @@ export function InsightsAchievements() {
   const badges = [
     { id: 1, icon: 'workspace_premium', label: '1 Week Clean', subtitle: 'DAY 7 STREAK', bgColor: 'bg-blue-50', iconColor: 'text-[#2D5AEE]', locked: false },
     { id: 2, icon: 'shield', label: 'Resilience', subtitle: '100 CRAVINGS DEFEATED', bgColor: 'bg-emerald-50', iconColor: 'text-emerald-600', locked: false },
-    { id: 3, icon: 'savings', label: 'Golden Saver', subtitle: '$1,000 MILESTONE', bgColor: 'bg-amber-50', iconColor: 'text-amber-500', locked: false },
+    { id: 3, icon: 'savings', label: 'Golden Saver', subtitle: '₹1,000 MILESTONE', bgColor: 'bg-amber-50', iconColor: 'text-amber-500', locked: false },
     { id: 4, icon: 'lock', label: 'Air Bender', subtitle: '1 MONTH CLEAN', bgColor: 'bg-slate-100', iconColor: 'text-slate-400', locked: true },
   ];
 

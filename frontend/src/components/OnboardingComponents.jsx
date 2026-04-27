@@ -5,25 +5,38 @@
  * Maintains exact UI design with no changes to styling or layout
  */
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * OnboardingNavbar Component - Top navigation for onboarding flow
- * Displays PRAN logo on left, Help Center and Sign In button on right
+ * Displays PRAN logo on left, theme toggle, Help Center and Sign In button on right
  * Takes no props, provides consistent branding across onboarding steps
  * Returns fixed navbar with white background and backdrop blur effect
  */
 export function OnboardingNavbar() {
   const navigate = useNavigate();
+  const { isDark, toggleTheme } = useTheme();
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm">
+    <header className="fixed top-0 w-full z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-slate-100 dark:border-gray-800 shadow-sm">
       <div className="flex justify-between items-center h-20 px-8 max-w-screen-2xl mx-auto">
         <div className="text-2xl font-extrabold tracking-tighter text-[#2D5AEE]">
           PRAN
         </div>
         
         <div className="hidden md:flex gap-x-8 items-center font-['Manrope'] text-sm font-medium tracking-wide">
-          <span className="text-slate-600 hover:text-[#2D5AEE] transition-colors cursor-pointer">
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors"
+            aria-label="Toggle theme"
+          >
+            <span className="material-symbols-outlined text-slate-600 dark:text-gray-300">
+              {isDark ? 'light_mode' : 'dark_mode'}
+            </span>
+          </button>
+          
+          <span className="text-slate-600 dark:text-gray-300 hover:text-[#2D5AEE] transition-colors cursor-pointer">
             Help Center
           </span>
           <button 
@@ -123,19 +136,19 @@ export function FormCard({ formData, handleInputChange, calculatedSavings, onBac
         <div className="grid md:grid-cols-2 gap-8">
           <div className="space-y-3">
             <label className="font-label-sm text-on-surface-variant uppercase tracking-wider">
-              Cost per pack
+              Cost per piece
             </label>
             <div className="relative">
               <span className="absolute left-6 top-1/2 -translate-y-1/2 font-h3 text-on-surface-variant">
-                $
+                ₹
               </span>
               <input
                 className="w-full h-[64px] pl-12 pr-6 rounded-[16px] border border-outline-variant bg-surface-bright text-h3 font-h3 text-on-surface input-focus-ring transition-all outline-none"
-                placeholder="12.50"
+                placeholder="10.00"
                 step="0.01"
                 type="number"
-                name="costPerPack"
-                value={formData.costPerPack}
+                name="costPerPiece"
+                value={formData.costPerPiece}
                 onChange={handleInputChange}
                 min="0"
               />
@@ -157,18 +170,18 @@ export function FormCard({ formData, handleInputChange, calculatedSavings, onBac
         </div>
 
         {/* Insight Highlight Card */}
-        <div className="bg-blue-50/50 rounded-[24px] p-6 border border-blue-100 flex gap-4 items-start">
-          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary shadow-sm flex-shrink-0">
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
+        <div className="bg-blue-50 dark:bg-gray-800 rounded-[24px] p-6 border border-blue-100 dark:border-gray-700 flex gap-4 items-start">
+          <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center text-primary shadow-sm flex-shrink-0">
+            <span className="material-symbols-outlined text-blue-600 dark:text-blue-400" style={{ fontVariationSettings: "'FILL' 1" }}>
               lightbulb
             </span>
           </div>
           <div>
-            <p className="text-sm font-medium text-[#2D5AEE] mb-1">Quick Projection</p>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">Quick Projection</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
               Based on these numbers, you'll save approximately{' '}
-              <span className="font-bold text-[#2D5AEE]">
-                ${calculatedSavings.yearly.toFixed(0)}
+              <span className="font-bold text-blue-600 dark:text-blue-400">
+                ₹{calculatedSavings.yearly.toFixed(0)}
               </span>{' '}
               in your first smoke-free year. That's a dream vacation or a significant step toward renewal.
             </p>

@@ -7,11 +7,15 @@
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { LeftPanel, Tabs, AuthForm } from '../components/AuthComponents';
 import { authAPI } from '../services/api';
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
+  const { syncThemeWithUser, setUserTheme } = useTheme();
 
   /**
    * State management for authentication form
@@ -106,9 +110,22 @@ const Auth = () => {
           cigarettes_per_day: 10 // Default value, can be updated later
         });
         
-        // Store token in localStorage
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
+        // Check if guest theme exists
+        const guestTheme = localStorage.getItem('guestTheme');
+        
+        // If guest theme exists, apply it to user profile
+        if (guestTheme) {
+          response.user.theme = guestTheme;
+          // Update user theme in DB (will be done via Settings API later)
+          setUserTheme(guestTheme);
+          localStorage.removeItem('guestTheme'); // Clear guest theme
+        } else {
+          // Sync with user's theme from DB
+          syncThemeWithUser(response.user.theme || 'light');
+        }
+        
+        // Store token and user data using AuthContext
+        login(response.user, response.token);
         
         alert('Account created successfully!');
         navigate('/dashboard');
@@ -119,9 +136,21 @@ const Auth = () => {
           password
         });
         
-        // Store token in localStorage
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
+        // Check if guest theme exists
+        const guestTheme = localStorage.getItem('guestTheme');
+        
+        // If guest theme exists, apply it to user profile
+        if (guestTheme) {
+          response.user.theme = guestTheme;
+          setUserTheme(guestTheme);
+          localStorage.removeItem('guestTheme'); // Clear guest theme
+        } else {
+          // Sync with user's theme from DB
+          syncThemeWithUser(response.user.theme || 'light');
+        }
+        
+        // Store token and user data using AuthContext
+        login(response.user, response.token);
         
         alert('Login successful!');
         navigate('/dashboard');

@@ -1,6 +1,7 @@
 {
   "name": "pran-frontend",
   "version": "1.0.0",
+  "type": "module",
   "description": "PRAN - AI Powered Smoking Cessation & Recovery Tracking System - Frontend",
   "private": true,
   "dependencies": {

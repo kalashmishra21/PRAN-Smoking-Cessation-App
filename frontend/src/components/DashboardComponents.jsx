@@ -63,7 +63,7 @@ export function StatsCards({ stats }) {
         </div>
         <div>
           <p className="text-on-surface-variant font-label-sm mb-1">Money saved</p>
-          <h3 className="font-h1 text-on-surface">${moneySaved.toFixed(2)}</h3>
+          <h3 className="font-h1 text-on-surface">₹{moneySaved.toFixed(2)}</h3>
         </div>
       </div>
 

@@ -33,7 +33,7 @@ const progressSchema = new mongoose.Schema({
 
 /**
  * Static method to calculate and update user progress
- * Takes user object with quit_date and cigarettes_per_day as input
+ * Takes user object with quit_date, cigarettes_per_day, and cost_per_pack as input
  * Calculates smoke-free days, cigarettes avoided, and money saved
  * Returns updated or created progress document with current statistics
  */
@@ -44,7 +44,10 @@ progressSchema.statics.calculateProgress = async function(user) {
   
   const smokeFree = Math.max(0, daysDiff);
   const cigarettesAvoided = smokeFree * user.cigarettes_per_day;
-  const moneySaved = cigarettesAvoided * 0.5; // Assuming $0.5 per cigarette
+  
+  // Calculate money saved using cost_per_pack as cost per piece
+  const costPerPiece = user.cost_per_pack || 10; // Default ₹10 per piece if not set
+  const moneySaved = cigarettesAvoided * costPerPiece;
   
   return await this.findOneAndUpdate(
     { user_id: user._id },

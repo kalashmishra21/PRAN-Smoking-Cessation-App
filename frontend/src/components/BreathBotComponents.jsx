@@ -4,32 +4,38 @@
  * Used by: BreathBot.jsx page
  */
 import { useEffect, useRef } from 'react';
-
-const BOT_AVATAR = 'https://lh3.googleusercontent.com/aida-public/AB6AXuBr57V-srkfLr-lh8KE5gVDKfyQZRVtZP5Cc5ua26BCNonTiyVqsKhqADKEmIJjOxVUAx46K5hJvX7c3l1idhW1HARq3pLXn0q2lDaTPtkfahGfhT_nfLatjZ-0eHKUxncQW-ZjWQtFHJIIKC03sWTY7zMT_ryCwmI6KL5qpg4VJZAWMn4NKZcf9hCbu22nsJZkkLbfeezBmpiOYhsa7Dw5hr50rJg6kjnSS3_bUE-eqYMOS93AKmlu1THL2NqezPoRUYzg1z37bsQ';
-const USER_AVATAR = 'https://lh3.googleusercontent.com/aida-public/AB6AXuC_fH5ShukOI5aH-_0WYMIFXJhiVwYwnQs16T3cyax70gWZKamw7X6UiSEexIiGuvo0uzFrC4ci5SoxCjy9ZeXdlHNtPSowEADB8IMvCgserzHVnKGI1QUIfck0Z8qCoRsDEIx8UAsUtcpEA7eYnZTbc9PqrBhSGPYcHjtN6S6C6d5SQOjadIMf0GnavXeEl4iUot4njj9lYgbk7JdSkgsw79qr_Jl95fz7DW8nnpQ5puYsjEepYVnkWKFIT1GSVXRLKmWQcoMy9e0';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * ChatBubble - Single chat message bubble for bot or user
  */
 export function ChatBubble({ message }) {
+  const { user } = useAuth();
   const { sender, text, time } = message;
   const isBot = sender === 'bot';
+
+  // Get user profile image
+  const userAvatar = user?.profile_image 
+    ? `http://localhost:5000${user.profile_image}`
+    : 'https://ui-avatars.com/api/?name=User&background=2D5AEE&color=fff&size=128';
 
   if (isBot) {
     return (
       <div className="flex gap-4 max-w-[85%]">
-        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border-2 border-primary-fixed shadow-sm bg-white">
-          <img src={BOT_AVATAR} alt="BreathBot Avatar" className="w-full h-full object-cover" />
+        {/* Simple bot icon instead of human image */}
+        <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900 flex items-center justify-center text-[#2D5AEE] dark:text-blue-400 border-2 border-blue-100 dark:border-blue-800 flex-shrink-0">
+          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1", fontSize: '24px' }}>
+            robot_2
+          </span>
         </div>
 
         <div className="flex flex-col gap-1">
           <div
-            className="p-5 rounded-2xl rounded-tl-none shadow-sm text-on-surface-variant border border-blue-100"
-            style={{ background: 'linear-gradient(135deg, #f3f2ff 0%, #e6e8ff 100%)' }}
+            className="p-5 rounded-2xl rounded-tl-none shadow-sm text-on-surface-variant dark:text-gray-300 border border-blue-100 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900"
           >
             <p className="text-[15px] leading-relaxed whitespace-pre-line">{text}</p>
           </div>
-          <span className="text-[11px] text-outline font-label-sm px-1">{time}</span>
+          <span className="text-[11px] text-outline dark:text-gray-500 font-label-sm px-1">{time}</span>
         </div>
       </div>
     );
@@ -37,15 +43,22 @@ export function ChatBubble({ message }) {
 
   return (
     <div className="flex flex-row-reverse gap-4 max-w-[85%] self-end">
-      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border-2 border-surface-container-highest shadow-sm">
-        <img src={USER_AVATAR} alt="User profile" className="w-full h-full object-cover" />
+      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border-2 border-surface-container-highest dark:border-gray-700 shadow-sm">
+        <img 
+          src={userAvatar} 
+          alt="User profile" 
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.target.src = 'https://ui-avatars.com/api/?name=User&background=2D5AEE&color=fff&size=128';
+          }}
+        />
       </div>
 
       <div className="flex flex-col items-end gap-1">
-        <div className="bg-white p-5 rounded-2xl rounded-tr-none shadow-[0px_4px_20px_rgba(45,90,238,0.1)] text-on-surface border border-slate-100">
+        <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl rounded-tr-none shadow-[0px_4px_20px_rgba(45,90,238,0.1)] dark:shadow-[0px_4px_20px_rgba(0,0,0,0.5)] text-on-surface dark:text-gray-100 border border-slate-100 dark:border-gray-700">
           <p className="text-[15px] leading-relaxed">{text}</p>
         </div>
-        <span className="text-[11px] text-outline font-label-sm px-1">{time}</span>
+        <span className="text-[11px] text-outline dark:text-gray-500 font-label-sm px-1">{time}</span>
       </div>
     </div>
   );
@@ -59,27 +72,27 @@ export function ProgressCard() {
     currentDay: 3,
     totalDays: 30,
     percent: 10,
-    moneySaved: '$42.00',
+    moneySaved: '₹42.00',
   };
 
   return (
     <div className="ml-14 max-w-sm">
-      <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-[0px_10px_30px_rgba(0,0,0,0.05)]">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-slate-100 dark:border-gray-700 shadow-[0px_10px_30px_rgba(0,0,0,0.05)] dark:shadow-[0px_10px_30px_rgba(0,0,0,0.5)]">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-bold text-on-surface font-h3">Your Path</span>
-          <span className="text-secondary font-bold text-xs font-label-sm">
+          <span className="text-sm font-bold text-on-surface dark:text-gray-100 font-h3">Your Path</span>
+          <span className="text-secondary dark:text-green-400 font-bold text-xs font-label-sm">
             Day {progress.currentDay} of {progress.totalDays}
           </span>
         </div>
 
-        <div className="w-full h-3 bg-surface-container-high rounded-full overflow-hidden mb-3">
+        <div className="w-full h-3 bg-surface-container-high dark:bg-gray-700 rounded-full overflow-hidden mb-3">
           <div
             className="h-full rounded-full progress-gradient"
             style={{ width: `${progress.percent}%` }}
           />
         </div>
 
-        <p className="text-xs text-outline font-label-sm">
+        <p className="text-xs text-outline dark:text-gray-400 font-label-sm">
           You've saved {progress.moneySaved} so far. Keep going!
         </p>
       </div>
@@ -140,8 +153,8 @@ export function QuickActions({ onSelect }) {
           onClick={() => onSelect(action)}
           className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             index === 0
-              ? 'border border-[#2D5AEE] text-[#2D5AEE] bg-blue-50 hover:bg-blue-100'
-              : 'border border-outline-variant text-on-surface-variant hover:border-[#2D5AEE] hover:text-[#2D5AEE] bg-white'
+              ? 'border border-[#2D5AEE] dark:border-blue-400 text-[#2D5AEE] dark:text-blue-400 bg-blue-50 dark:bg-blue-900 hover:bg-blue-100 dark:hover:bg-blue-800'
+              : 'border border-outline-variant dark:border-gray-600 text-on-surface-variant dark:text-gray-300 hover:border-[#2D5AEE] dark:hover:border-blue-400 hover:text-[#2D5AEE] dark:hover:text-blue-400 bg-white dark:bg-gray-800'
           }`}
         >
           {action}
@@ -152,7 +165,7 @@ export function QuickActions({ onSelect }) {
 }
 
 /**
- * ChatInput - Message input bar with mic icon and send button
+ * ChatInput - Message input bar with send button (NO VOICE)
  */
 export function ChatInput({ value, onChange, onSend }) {
   const handleKeyDown = (e) => {
@@ -171,20 +184,13 @@ export function ChatInput({ value, onChange, onSend }) {
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
-          className="w-full h-14 pl-6 pr-14 rounded-full border border-slate-200 focus:border-[#2D5AEE] focus:outline-none focus:ring-0 text-base bg-slate-50 placeholder:text-slate-400 transition-all"
+          className="w-full h-14 pl-6 pr-6 rounded-full border border-slate-200 dark:border-gray-600 focus:border-[#2D5AEE] dark:focus:border-blue-400 focus:outline-none focus:ring-0 text-base bg-slate-50 dark:bg-gray-800 text-on-surface dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-500 transition-all"
         />
-        <button
-          type="button"
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-[#2D5AEE] transition-colors"
-          tabIndex={-1}
-        >
-          <span className="material-symbols-outlined">mic</span>
-        </button>
       </div>
 
       <button
         onClick={onSend}
-        className="w-14 h-14 bg-[#2D5AEE] text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all"
+        className="w-14 h-14 bg-[#2D5AEE] dark:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all"
       >
         <span className="material-symbols-outlined">send</span>
       </button>

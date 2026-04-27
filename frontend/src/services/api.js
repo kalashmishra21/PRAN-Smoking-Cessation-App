@@ -88,10 +88,28 @@ export const userAPI = {
    */
   updateProfile: async (userData) => {
     try {
-      const response = await api.put('/user/profile', userData);
+      const response = await api.patch('/user/update-profile', userData);
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to update profile' };
+    }
+  },
+
+  /**
+   * Upload profile image
+   * Takes FormData with image file
+   * Returns updated user with new image URL
+   */
+  uploadProfileImage: async (formData) => {
+    try {
+      const response = await api.post('/user/upload-profile-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to upload image' };
     }
   },
 };
@@ -115,12 +133,30 @@ export const progressAPI = {
 };
 
 /**
+ * Dashboard API methods
+ */
+export const dashboardAPI = {
+  /**
+   * Get complete dashboard data
+   * Returns all dashboard stats, progress, cravings, achievements
+   */
+  getDashboard: async () => {
+    try {
+      const response = await api.get('/dashboard');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch dashboard data' };
+    }
+  },
+};
+
+/**
  * Craving API methods
  */
 export const cravingAPI = {
   /**
    * Log a new craving
-   * Takes craving data (intensity, trigger, etc.)
+   * Takes craving data (intensity, trigger, notes)
    * Returns created craving record
    */
   logCraving: async (cravingData) => {
@@ -133,12 +169,26 @@ export const cravingAPI = {
   },
 
   /**
-   * Get all cravings for user
-   * Returns array of craving records
+   * Get all cravings for user with optional filters
+   * Takes optional filter parameters (minStrength, maxStrength, trigger, startDate, endDate)
+   * Returns array of craving records with statistics
    */
-  getCravings: async () => {
+  getCravings: async (filters = {}) => {
     try {
-      const response = await api.get('/cravings');
+      // Build query string from filters
+      const queryParams = new URLSearchParams();
+      if (filters.minStrength) queryParams.append('minStrength', filters.minStrength);
+      if (filters.maxStrength) queryParams.append('maxStrength', filters.maxStrength);
+      if (filters.trigger) queryParams.append('trigger', filters.trigger);
+      if (filters.startDate) queryParams.append('startDate', filters.startDate);
+      if (filters.endDate) queryParams.append('endDate', filters.endDate);
+      if (filters.limit) queryParams.append('limit', filters.limit);
+      if (filters.sort) queryParams.append('sort', filters.sort);
+      
+      const queryString = queryParams.toString();
+      const url = queryString ? `/cravings?${queryString}` : '/cravings';
+      
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch cravings' };

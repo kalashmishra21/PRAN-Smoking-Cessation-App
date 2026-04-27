@@ -56,13 +56,15 @@ const getDashboard = async (req, res) => {
  */
 const updateProfile = async (req, res) => {
   try {
-    const { name, quit_date, cigarettes_per_day } = req.body;
+    const { name, quit_date, cigarettes_per_day, cost_per_pack, theme } = req.body;
     const userId = req.user._id;
 
     const updateData = {};
     if (name) updateData.name = name;
     if (quit_date) updateData.quit_date = new Date(quit_date);
     if (cigarettes_per_day !== undefined) updateData.cigarettes_per_day = cigarettes_per_day;
+    if (cost_per_pack !== undefined) updateData.cost_per_pack = cost_per_pack;
+    if (theme && ['light', 'dark'].includes(theme)) updateData.theme = theme;
 
     const user = await User.findByIdAndUpdate(
       userId,
@@ -77,7 +79,74 @@ const updateProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         quit_date: user.quit_date,
-        cigarettes_per_day: user.cigarettes_per_day
+        cigarettes_per_day: user.cigarettes_per_day,
+        cost_per_pack: user.cost_per_pack,
+        profile_image: user.profile_image,
+        theme: user.theme
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+/**
+ * Upload profile image
+ * Takes image file from multipart form data
+ * Saves image and updates user profile_image field
+ * Returns updated user with new profile image URL
+ */
+const uploadProfileImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const userId = req.user._id;
+    const imageUrl = `/uploads/${req.file.filename}`;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { profile_image: imageUrl },
+      { new: true }
+    ).select('-password_hash');
+
+    res.json({
+      message: 'Profile image uploaded successfully',
+      profile_image: user.profile_image,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        profile_image: user.profile_image
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+/**
+ * Get user profile
+ * Returns current user profile data
+ * Takes authenticated user from middleware
+ * Returns user profile without password
+ */
+const getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password_hash');
+    
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        quit_date: user.quit_date,
+        cigarettes_per_day: user.cigarettes_per_day,
+        cost_per_pack: user.cost_per_pack,
+        profile_image: user.profile_image,
+        theme: user.theme,
+        created_at: user.createdAt
       }
     });
   } catch (error) {
@@ -111,6 +180,8 @@ const deleteAccount = async (req, res) => {
 
 module.exports = {
   getDashboard,
+  getProfile,
   updateProfile,
+  uploadProfileImage,
   deleteAccount
 };

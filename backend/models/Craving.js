@@ -17,6 +17,17 @@ const cravingSchema = new mongoose.Schema({
     default: Date.now,
     required: true
   },
+  intensity: {
+    type: Number,
+    min: 1,
+    max: 10,
+    default: 5
+  },
+  trigger: {
+    type: String,
+    trim: true,
+    maxlength: 200
+  },
   notes: {
     type: String,
     trim: true,

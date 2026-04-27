@@ -1,38 +1,39 @@
 /**
  * Settings Page Component - Account Settings page for PRAN app
  * Displays profile card, quit journey form, pro plan card, notifications, and action buttons
- * Manages all form state with useState; save logs data, logout navigates to auth
+ * Fetches real user data and implements profile updates with image upload
  * Returns full page layout with sidebar, header, settings sections, and footer
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
-import { ProfileCard, QuitJourneyCard, ProPlanCard, ActionButtons } from '../components/SettingsComponents';
+import { ProfileCard, QuitJourneyCard, ThemeToggleCard, ActionButtons } from '../components/SettingsComponents';
 import NotificationCard from '../components/NotificationCard';
+import { userAPI } from '../services/api';
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { user, logout, updateUser, isAuthenticated, loading: authLoading } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   /**
    * Form state for profile and journey fields
-   * Holds name, email, quit_date, habit_intensity, and motivation
-   * Initialized with static default values matching the design
-   * Returns object with all form field values
+   * Initialized with user data from AuthContext
    */
   const [formData, setFormData] = useState({
-    name: 'Alex Rivers',
-    email: 'alex.rivers@recovery.com',
-    quit_date: '2024-03-01',
-    habit_intensity: 'moderate',
-    motivation:
-      'To breathe deeper during my morning yoga and save for a trip to the Amalfi Coast.',
+    name: '',
+    email: '',
+    quit_date: '',
+    cigarettes_per_day: 0,
+    cost_per_pack: 0,
+    motivation: '',
   });
 
   /**
    * Toggle state for notification preferences
-   * Each key maps to a boolean on/off value
-   * Daily motivation and milestone alerts default to true, weekly report to false
-   * Returns object with three boolean toggle values
    */
   const [toggles, setToggles] = useState({
     daily_motivation: true,
@@ -40,11 +41,45 @@ const Settings = () => {
     weekly_report: false,
   });
 
+  // Redirect if not authenticated (after auth loading completes)
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated()) {
+      navigate('/auth');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
+  // Fetch user profile on mount (only if authenticated)
+  useEffect(() => {
+    if (!authLoading && isAuthenticated()) {
+      fetchProfile();
+    }
+  }, [authLoading, isAuthenticated]);
+
+  /**
+   * Fetch user profile from backend
+   */
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const response = await userAPI.getProfile();
+      
+      setFormData({
+        name: response.user.name || '',
+        email: response.user.email || '',
+        quit_date: response.user.quit_date ? response.user.quit_date.split('T')[0] : '',
+        cigarettes_per_day: response.user.cigarettes_per_day || 0,
+        cost_per_pack: response.user.cost_per_pack || 0,
+        motivation: response.user.motivation || '',
+      });
+    } catch (err) {
+      console.error('Failed to fetch profile:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /**
    * Generic form field change handler
-   * Updates a single field in formData by key
-   * Takes field name (string) and new value as parameters
-   * Returns void, updates state immutably
    */
   const handleFormChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -52,36 +87,99 @@ const Settings = () => {
 
   /**
    * Toggle notification preference by key
-   * Flips the boolean value for the given toggle key
-   * Takes toggle key string as parameter
-   * Returns void, updates toggles state immutably
    */
   const handleToggle = (key) => {
     setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   /**
-   * Handle Save All Changes button click
-   * Logs all current form data and toggle states to console
-   * Takes no parameters
-   * Returns void, will call API in future
+   * Handle profile image upload
    */
-  const handleSave = () => {
-    console.log('Saving settings:', { ...formData, notifications: toggles });
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      
+      const formData = new FormData();
+      formData.append('profile_image', file);
+      
+      const response = await userAPI.uploadProfileImage(formData);
+      
+      // Update user in AuthContext
+      updateUser(response.user);
+      
+      alert('Profile image updated successfully!');
+    } catch (err) {
+      console.error('Failed to upload image:', err);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  /**
+   * Handle Save All Changes button click
+   */
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      
+      const updateData = {
+        name: formData.name,
+        quit_date: formData.quit_date,
+        cigarettes_per_day: parseInt(formData.cigarettes_per_day),
+        cost_per_pack: parseFloat(formData.cost_per_pack),
+        motivation: formData.motivation,
+      };
+      
+      const response = await userAPI.updateProfile(updateData);
+      
+      // Update user in AuthContext
+      updateUser(response.user);
+      
+      alert('Settings saved successfully!');
+    } catch (err) {
+      console.error('Failed to save settings:', err);
+      alert('Failed to save settings. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   /**
    * Handle Logout button click
-   * Logs logout action to console for debugging
-   * Navigates to auth page to log in again
-   * Takes no parameters
-   * Returns void, will clear auth and redirect
    */
   const handleLogout = () => {
-    console.log('logout');
-    // Clear auth state here in future
-    navigate('/auth');
+    logout();
   };
+
+  if (loading) {
+    return (
+      <div className="bg-surface font-body-md text-on-surface min-h-screen">
+        <Sidebar activeMenu="settings" />
+        <main className="md:ml-64 pt-8 pb-12 px-6 min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-on-surface-variant">Loading settings...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-surface font-body-md text-on-surface min-h-screen">
@@ -109,26 +207,29 @@ const Settings = () => {
           <div className="space-y-8">
 
             {/* Profile Card */}
-            <ProfileCard formData={formData} onChange={handleFormChange} />
+            <ProfileCard 
+              formData={formData} 
+              onChange={handleFormChange}
+              onImageUpload={handleImageUpload}
+              uploadingImage={uploadingImage}
+              profileImage={user?.profile_image}
+            />
 
-            {/* Quit Journey + Pro Plan side by side */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              {/* Quit Journey form — 8 cols */}
-              <div className="md:col-span-8">
-                <QuitJourneyCard formData={formData} onChange={handleFormChange} />
-              </div>
+            {/* Quit Journey form — Full Width */}
+            <QuitJourneyCard formData={formData} onChange={handleFormChange} />
 
-              {/* Pro Plan upgrade card — 4 cols */}
-              <div className="md:col-span-4">
-                <ProPlanCard />
-              </div>
-            </div>
+            {/* Theme Toggle Card */}
+            <ThemeToggleCard />
 
             {/* Notification Preferences */}
             <NotificationCard toggles={toggles} onToggle={handleToggle} />
 
             {/* Save + Logout buttons */}
-            <ActionButtons onSave={handleSave} onLogout={handleLogout} />
+            <ActionButtons 
+              onSave={handleSave} 
+              onLogout={handleLogout}
+              saving={saving}
+            />
           </div>
 
           {/* Footer */}

@@ -8,18 +8,25 @@ const Craving = require('../models/Craving');
 
 /**
  * Log a new smoking craving incident
- * Takes timestamp and optional notes from request body
+ * Takes timestamp, intensity, trigger, and optional notes from request body
  * Creates new craving record for authenticated user
  * Returns confirmation message and created craving data
  */
 const logCraving = async (req, res) => {
   try {
-    const { notes } = req.body;
+    const { notes, intensity, trigger } = req.body;
     const userId = req.user._id;
+
+    // Validate and clamp intensity between 1 and 5
+    let validIntensity = parseInt(intensity) || 5;
+    if (validIntensity > 5) validIntensity = 5;
+    if (validIntensity < 1) validIntensity = 1;
 
     const craving = new Craving({
       user_id: userId,
       timestamp: new Date(),
+      intensity: validIntensity,
+      trigger: trigger || '',
       notes: notes || ''
     });
 
@@ -30,6 +37,8 @@ const logCraving = async (req, res) => {
       craving: {
         id: craving._id,
         timestamp: craving.timestamp,
+        intensity: craving.intensity,
+        trigger: craving.trigger,
         notes: craving.notes
       }
     });
@@ -39,22 +48,57 @@ const logCraving = async (req, res) => {
 };
 
 /**
- * Get user's craving history and statistics
- * Takes authenticated user ID from middleware
- * Retrieves all cravings with statistics and patterns
+ * Get user's craving history and statistics with optional filters
+ * Takes authenticated user ID from middleware and query params for filtering
+ * Retrieves filtered cravings with statistics and patterns
  * Returns craving list, total count, and daily/weekly patterns
  */
 const getCravings = async (req, res) => {
   try {
     const userId = req.user._id;
+    const { minStrength, maxStrength, trigger, startDate, endDate, limit, sort } = req.query;
+    
+    // Build filter query
+    const filter = { user_id: userId };
+    
+    // Filter by strength range
+    if (minStrength || maxStrength) {
+      filter.intensity = {};
+      if (minStrength) filter.intensity.$gte = parseInt(minStrength);
+      if (maxStrength) filter.intensity.$lte = parseInt(maxStrength);
+    }
+    
+    // Filter by trigger (case-insensitive partial match)
+    if (trigger) {
+      filter.trigger = { $regex: trigger, $options: 'i' };
+    }
+    
+    // Filter by date range
+    if (startDate || endDate) {
+      filter.timestamp = {};
+      if (startDate) filter.timestamp.$gte = new Date(startDate);
+      if (endDate) filter.timestamp.$lte = new Date(endDate);
+    }
     
     // Get craving statistics
     const cravingStats = await Craving.getUserCravingStats(userId);
     
-    // Get all cravings for pattern analysis
-    const allCravings = await Craving.find({ user_id: userId })
-      .sort({ timestamp: -1 })
-      .select('timestamp notes');
+    // Build query with filters
+    let query = Craving.find(filter).select('timestamp intensity trigger notes');
+    
+    // Apply sorting
+    if (sort === 'asc') {
+      query = query.sort({ timestamp: 1 });
+    } else {
+      query = query.sort({ timestamp: -1 });
+    }
+    
+    // Apply limit if specified
+    if (limit) {
+      query = query.limit(parseInt(limit));
+    }
+    
+    const allCravings = await query;
 
     // Calculate daily patterns
     const dailyPattern = {};
@@ -68,7 +112,8 @@ const getCravings = async (req, res) => {
       statistics: {
         total_cravings: cravingStats.total,
         recent_cravings: cravingStats.recent,
-        daily_pattern: dailyPattern
+        daily_pattern: dailyPattern,
+        filtered_count: allCravings.length
       }
     });
   } catch (error) {
