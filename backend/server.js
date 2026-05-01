@@ -22,17 +22,25 @@ const path = require('path');
 const app = express();
 
 // Middleware
+const normalizeOrigin = (origin = '') => origin.trim().replace(/\/+$/, '');
+
+const configuredOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((origin) => normalizeOrigin(origin))
+  .filter(Boolean);
+
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
+  ...configuredOrigins,
   'http://localhost:5173',
   'http://localhost:3000',
-].filter(Boolean);
+].map((origin) => normalizeOrigin(origin));
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow non-browser requests (no Origin header), like health checks and server-to-server calls.
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    const normalizedOrigin = normalizeOrigin(origin);
+    if (allowedOrigins.includes(normalizedOrigin)) return callback(null, true);
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true
