@@ -40,7 +40,7 @@ const CravingLog = () => {
   // Redirect if not authenticated (after auth loading completes)
   useEffect(() => {
     if (!authLoading && !isAuthenticated()) {
-      navigate('/auth');
+      navigate('/auth', { replace: true });
     }
   }, [isAuthenticated, authLoading, navigate]);
 

@@ -5,7 +5,7 @@
  * Connects to backend API for authentication
  * Returns split-screen layout with branding panel and auth form
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -15,7 +15,7 @@ import { authAPI } from '../services/api';
 const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
   const { syncThemeWithUser, setUserTheme } = useTheme();
 
   /**
@@ -44,6 +44,12 @@ const Auth = () => {
       return {};
     }
   }, [location.state]);
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated()) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [authLoading, isAuthenticated, navigate]);
 
   /**
    * Validate password strength
@@ -133,7 +139,7 @@ const Auth = () => {
         localStorage.removeItem('onboardingData');
         
         alert('Account created successfully!');
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       } else {
         // Login API call
         const response = await authAPI.login({
@@ -158,7 +164,7 @@ const Auth = () => {
         login(response.user, response.token);
         
         alert('Login successful!');
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       }
     } catch (error) {
       console.error('Authentication error:', error);

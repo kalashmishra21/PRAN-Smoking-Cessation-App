@@ -3,15 +3,85 @@
  * Contains: CravingChart, ProgressRingCard, RightStats, MoneySavedCard, InsightsAchievements, WeeklyTable
  * Used by: Insights.jsx page
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+
+const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+const startOfDay = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const getDaysSinceQuit = (quitDate) => {
+  if (!quitDate) return 0;
+  const quit = startOfDay(quitDate);
+  const today = startOfDay(new Date());
+  const diff = Math.floor((today - quit) / (1000 * 60 * 60 * 24));
+  return Math.max(0, diff);
+};
+
+const formatCurrency = (amount = 0) => `₹${Number(amount || 0).toFixed(0)}`;
+
+const safePercent = (value) => Math.max(0, Math.min(100, Math.round(value || 0)));
+
+const buildWeeklySeries = (cravingsData = []) => {
+  const today = startOfDay(new Date());
+  const series = [];
+  for (let i = 6; i >= 0; i -= 1) {
+    const day = new Date(today);
+    day.setDate(today.getDate() - i);
+    const next = new Date(day);
+    next.setDate(day.getDate() + 1);
+    const count = cravingsData.filter((c) => {
+      const ts = new Date(c.timestamp);
+      return ts >= day && ts < next;
+    }).length;
+    series.push({ label: WEEK_DAYS[day.getDay()], value: count });
+  }
+  return series;
+};
+
+const buildMonthlySeries = (cravingsData = []) => {
+  const today = startOfDay(new Date());
+  const buckets = [];
+  for (let i = 3; i >= 0; i -= 1) {
+    const end = new Date(today);
+    end.setDate(today.getDate() - (i * 7));
+    const start = new Date(end);
+    start.setDate(end.getDate() - 6);
+    const count = cravingsData.filter((c) => {
+      const ts = new Date(c.timestamp);
+      return ts >= start && ts <= end;
+    }).length;
+    buckets.push({ label: `W${4 - i}`, value: count });
+  }
+  return buckets;
+};
+
+const buildMoneySeries = (dashboardData) => {
+  const total = Number(dashboardData?.progress?.money_saved || 0);
+  const smokeFreeDays = Number(dashboardData?.progress?.smoke_free_days || 0);
+  const avgPerDay = smokeFreeDays > 0 ? total / smokeFreeDays : 0;
+  const months = ['JAN', 'FEB', 'MAR', 'APR'];
+
+  return months.map((month, idx) => {
+    const daysFactor = (idx + 1) * 30;
+    const value = avgPerDay * Math.min(daysFactor, smokeFreeDays);
+    return { month, value };
+  });
+};
 
 /**
  * CravingChart - SVG line chart showing craving frequency
  */
-export function CravingChart() {
+export function CravingChart({ cravingsData = [] }) {
   const [activeTab, setActiveTab] = useState('weekly');
-  const weeklyData = [2, 3, 2, 4, 6, 5, 4];
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const weeklySeries = useMemo(() => buildWeeklySeries(cravingsData), [cravingsData]);
+  const monthlySeries = useMemo(() => buildMonthlySeries(cravingsData), [cravingsData]);
+  const selectedSeries = activeTab === 'weekly' ? weeklySeries : monthlySeries;
+  const chartData = selectedSeries.map((item) => item.value);
+  const labels = selectedSeries.map((item) => item.label);
 
   const getPoints = (data, width, height, padding) => {
     const maxVal = Math.max(...data);
@@ -39,7 +109,7 @@ export function CravingChart() {
   const svgWidth = 700;
   const svgHeight = 220;
   const padding = 24;
-  const points = getPoints(weeklyData, svgWidth, svgHeight, padding);
+  const points = getPoints(chartData.length ? chartData : [0], svgWidth, svgHeight, padding);
   const linePath = buildSmoothPath(points);
   const lastPoint = points[points.length - 1];
   const areaPath = `${linePath} L ${lastPoint.x},${svgHeight} L ${points[0].x},${svgHeight} Z`;
@@ -52,7 +122,7 @@ export function CravingChart() {
             Craving Frequency
           </h2>
           <p className="text-on-surface-variant text-sm mt-1">
-            Daily log frequency for the past 7 days
+            {activeTab === 'weekly' ? 'Daily logs for the last 7 days' : 'Weekly totals for the last 4 weeks'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -124,9 +194,9 @@ export function CravingChart() {
         </svg>
 
         <div className="flex justify-between px-1 mt-2">
-          {days.map((day) => (
-            <span key={day} className="text-xs text-on-surface-variant font-medium w-10 text-center">
-              {day}
+          {labels.map((label) => (
+            <span key={label} className="text-xs text-on-surface-variant font-medium w-10 text-center">
+              {label}
             </span>
           ))}
         </div>
@@ -181,11 +251,27 @@ function ProgressRingCard({ label, percent, subtitle, strokeColor }) {
 /**
  * RightStats - Three circular progress ring cards
  */
-export function RightStats() {
+export function RightStats({ dashboardData }) {
+  const daysSinceQuit = getDaysSinceQuit(dashboardData?.user?.quit_date);
   const metrics = [
-    { label: 'Lung Capacity', percent: 75, subtitle: 'Recovering at optimal rate', strokeColor: '#2D5AEE' },
-    { label: 'Nicotine Flush', percent: 50, subtitle: 'Toxins leaving system', strokeColor: '#4DE082' },
-    { label: 'Circulation', percent: 30, subtitle: 'Heart rate normalizing', strokeColor: '#5e697e' },
+    {
+      label: 'Lung Capacity',
+      percent: safePercent((daysSinceQuit / 90) * 100),
+      subtitle: daysSinceQuit >= 90 ? 'Major recovery milestone reached' : 'Gradually improving',
+      strokeColor: '#2D5AEE'
+    },
+    {
+      label: 'Nicotine Flush',
+      percent: safePercent((daysSinceQuit / 7) * 100),
+      subtitle: daysSinceQuit >= 7 ? 'Most nicotine cleared' : 'Body detox in progress',
+      strokeColor: '#4DE082'
+    },
+    {
+      label: 'Circulation',
+      percent: safePercent((daysSinceQuit / 30) * 100),
+      subtitle: daysSinceQuit >= 30 ? 'Blood flow recovery on track' : 'Circulation improving',
+      strokeColor: '#5e697e'
+    },
   ];
 
   return (
@@ -200,13 +286,10 @@ export function RightStats() {
 /**
  * MoneySavedCard - Bar chart card showing monthly savings
  */
-export function MoneySavedCard() {
-  const monthlyData = [
-    { month: 'JAN', heightPercent: 20 },
-    { month: 'FEB', heightPercent: 45 },
-    { month: 'MAR', heightPercent: 70 },
-    { month: 'APR', heightPercent: 95, active: true },
-  ];
+export function MoneySavedCard({ dashboardData }) {
+  const monthlyData = buildMoneySeries(dashboardData);
+  const maxValue = Math.max(...monthlyData.map((m) => m.value), 1);
+  const totalSavings = Number(dashboardData?.progress?.money_saved || 0);
 
   return (
     <div className="glass-card rounded-[32px] p-8 card-shadow h-full flex flex-col">
@@ -214,18 +297,18 @@ export function MoneySavedCard() {
         Money Saved
       </h2>
       <p className="text-on-surface-variant text-sm mb-6">
-        Total savings: <span className="text-[#2D5AEE] font-bold text-lg">₹1,240</span>
+        Total savings: <span className="text-[#2D5AEE] font-bold text-lg">{formatCurrency(totalSavings)}</span>
       </p>
 
       <div className="flex items-end justify-between gap-4 flex-1 min-h-[160px]">
-        {monthlyData.map((item) => (
+        {monthlyData.map((item, idx) => (
           <div key={item.month} className="flex flex-col items-center gap-2 flex-1">
             <div className="w-full flex items-end" style={{ height: '140px' }}>
               <div
                 className={`w-full rounded-t-xl transition-all ${
-                  item.active ? 'bg-[#2D5AEE]' : 'bg-surface-container-high hover:bg-blue-100'
+                  idx === monthlyData.length - 1 ? 'bg-[#2D5AEE]' : 'bg-surface-container-high hover:bg-blue-100'
                 }`}
-                style={{ height: `${item.heightPercent}%` }}
+                style={{ height: `${Math.max((item.value / maxValue) * 100, 2)}%` }}
               />
             </div>
             <span className="text-[10px] font-bold text-on-surface-variant tracking-wider">
@@ -241,13 +324,22 @@ export function MoneySavedCard() {
 /**
  * InsightsAchievements - Achievement badges grid
  */
-export function InsightsAchievements() {
+export function InsightsAchievements({ dashboardData }) {
+  const [showAll, setShowAll] = useState(false);
+  const smokeFreeDays = Number(dashboardData?.progress?.smoke_free_days || 0);
+  const moneySaved = Number(dashboardData?.progress?.money_saved || 0);
+  const cravingsTotal = Number(dashboardData?.cravings?.total || 0);
+
   const badges = [
-    { id: 1, icon: 'workspace_premium', label: '1 Week Clean', subtitle: 'DAY 7 STREAK', bgColor: 'bg-blue-50', iconColor: 'text-[#2D5AEE]', locked: false },
-    { id: 2, icon: 'shield', label: 'Resilience', subtitle: '100 CRAVINGS DEFEATED', bgColor: 'bg-emerald-50', iconColor: 'text-emerald-600', locked: false },
-    { id: 3, icon: 'savings', label: 'Golden Saver', subtitle: '₹1,000 MILESTONE', bgColor: 'bg-amber-50', iconColor: 'text-amber-500', locked: false },
-    { id: 4, icon: 'lock', label: 'Air Bender', subtitle: '1 MONTH CLEAN', bgColor: 'bg-slate-100', iconColor: 'text-slate-400', locked: true },
+    { id: 1, icon: 'flag', label: 'First Day', subtitle: '1 DAY SMOKE-FREE', unlocked: smokeFreeDays >= 1, bgColor: 'bg-blue-50', iconColor: 'text-[#2D5AEE]' },
+    { id: 2, icon: 'workspace_premium', label: '1 Week Clean', subtitle: '7 DAY STREAK', unlocked: smokeFreeDays >= 7, bgColor: 'bg-emerald-50', iconColor: 'text-emerald-600' },
+    { id: 3, icon: 'air', label: 'Air Bender', subtitle: '30 DAYS CLEAN', unlocked: smokeFreeDays >= 30, bgColor: 'bg-cyan-50', iconColor: 'text-cyan-600' },
+    { id: 4, icon: 'savings', label: 'Golden Saver', subtitle: '₹100 SAVED', unlocked: moneySaved >= 100, bgColor: 'bg-amber-50', iconColor: 'text-amber-500' },
+    { id: 5, icon: 'psychology', label: 'Resilience', subtitle: '10 CRAVINGS LOGGED', unlocked: cravingsTotal >= 10, bgColor: 'bg-purple-50', iconColor: 'text-purple-600' },
+    { id: 6, icon: 'military_tech', label: 'Century Club', subtitle: '100 DAYS CLEAN', unlocked: smokeFreeDays >= 100, bgColor: 'bg-indigo-50', iconColor: 'text-indigo-600' },
   ];
+
+  const visibleBadges = showAll ? badges : badges.slice(0, 4);
 
   return (
     <div className="glass-card rounded-[32px] p-8 card-shadow">
@@ -258,27 +350,30 @@ export function InsightsAchievements() {
           </h2>
           <p className="text-on-surface-variant text-sm mt-1">Badges earned through dedication</p>
         </div>
-        <button className="text-[#2D5AEE] font-bold text-sm hover:underline transition-all">
-          View All
+        <button
+          className="text-[#2D5AEE] font-bold text-sm hover:underline transition-all"
+          onClick={() => setShowAll((prev) => !prev)}
+        >
+          {showAll ? 'Show Less' : 'View All'}
         </button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        {badges.map((badge) => (
+        {visibleBadges.map((badge) => (
           <div
             key={badge.id}
-            className={`flex flex-col items-center text-center group ${badge.locked ? 'opacity-40 grayscale' : ''}`}
+            className={`flex flex-col items-center text-center group ${!badge.unlocked ? 'opacity-40 grayscale' : ''}`}
           >
             <div
               className={`w-20 h-20 rounded-full ${badge.bgColor} flex items-center justify-center mb-3 ${
-                !badge.locked ? 'group-hover:scale-110 transition-transform' : ''
+                badge.unlocked ? 'group-hover:scale-110 transition-transform' : ''
               }`}
             >
               <span
                 className={`material-symbols-outlined text-4xl ${badge.iconColor}`}
                 style={{ fontVariationSettings: "'FILL' 1" }}
               >
-                {badge.icon}
+                {badge.unlocked ? badge.icon : 'lock'}
               </span>
             </div>
             <h5 className="text-sm font-bold text-on-surface">{badge.label}</h5>
@@ -295,12 +390,41 @@ export function InsightsAchievements() {
 /**
  * WeeklyTable - Detailed weekly craving breakdown table
  */
-export function WeeklyTable() {
-  const tableRows = [
-    { day: 'Monday', cravings: 4, technique: 'Breathwork (3x)', intensity: 7.5, intensityWidth: '75%', intensityColor: 'bg-orange-400', outcome: 'Success' },
-    { day: 'Tuesday', cravings: 2, technique: 'BreathBot Chat', intensity: 4.0, intensityWidth: '40%', intensityColor: 'bg-amber-400', outcome: 'Success' },
-    { day: 'Wednesday', cravings: 6, technique: 'Mental Distraction', intensity: 9.0, intensityWidth: '90%', intensityColor: 'bg-red-400', outcome: 'Success' },
-  ];
+export function WeeklyTable({ cravingsData = [] }) {
+  const tableRows = useMemo(() => {
+    const today = startOfDay(new Date());
+    const rows = [];
+    for (let i = 6; i >= 0; i -= 1) {
+      const dayStart = new Date(today);
+      dayStart.setDate(today.getDate() - i);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayStart.getDate() + 1);
+      const dayCravings = cravingsData.filter((c) => {
+        const ts = new Date(c.timestamp);
+        return ts >= dayStart && ts < dayEnd;
+      });
+      const avgIntensity = dayCravings.length
+        ? dayCravings.reduce((sum, c) => sum + Number(c.intensity || 0), 0) / dayCravings.length
+        : 0;
+      const triggerCounts = dayCravings.reduce((acc, c) => {
+        const key = (c.trigger || 'General').trim();
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+      const topTrigger = Object.entries(triggerCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '-';
+      const intensityWidth = `${Math.max(Math.min((avgIntensity / 10) * 100, 100), 0)}%`;
+      rows.push({
+        day: dayStart.toLocaleDateString('en-US', { weekday: 'long' }),
+        cravings: dayCravings.length,
+        technique: topTrigger,
+        intensity: avgIntensity.toFixed(1),
+        intensityWidth,
+        intensityColor: avgIntensity >= 7 ? 'bg-red-400' : avgIntensity >= 4 ? 'bg-amber-400' : 'bg-emerald-400',
+        outcome: dayCravings.length === 0 || avgIntensity <= 7 ? 'On Track' : 'High Risk',
+      });
+    }
+    return rows;
+  }, [cravingsData]);
 
   return (
     <div className="glass-card rounded-[32px] overflow-hidden card-shadow">
@@ -337,7 +461,11 @@ export function WeeklyTable() {
                   </div>
                 </td>
                 <td className="px-8 py-5">
-                  <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    row.outcome === 'On Track'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-red-100 text-red-700'
+                  }`}>
                     {row.outcome}
                   </span>
                 </td>

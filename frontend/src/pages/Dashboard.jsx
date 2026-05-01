@@ -35,7 +35,7 @@ const Dashboard = () => {
     if (authLoading) return;
     
     if (!isAuthenticated()) {
-      navigate('/auth');
+      navigate('/auth', { replace: true });
       return;
     }
 

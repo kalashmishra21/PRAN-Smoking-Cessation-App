@@ -4,12 +4,20 @@
  * Uses React useState to manage form data and calculate savings dynamically
  * Returns complete onboarding page with navbar, progress bar, form, and footer
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OnboardingNavbar, ProgressBar, FormCard, FooterInfo } from '../components/OnboardingComponents';
+import { useAuth } from '../context/AuthContext';
 
 const OnboardingStep2 = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated()) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [authLoading, isAuthenticated, navigate]);
 
   /**
    * Form state management for user inputs

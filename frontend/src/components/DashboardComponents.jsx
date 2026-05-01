@@ -34,6 +34,21 @@ export function TopHeader({ userName = 'Alex', completionPercent = 24, dayStreak
  */
 export function StatsCards({ stats }) {
   const { smokeFree = 14, moneySaved = 248.50, cigarettesAvoided = 280 } = stats || {};
+  const safeSmokeFree = Math.max(0, Number(smokeFree) || 0);
+  const safeMoneySaved = Math.max(0, Number(moneySaved) || 0);
+  const safeCigarettesAvoided = Math.max(0, Number(cigarettesAvoided) || 0);
+
+  const todaysGain = safeSmokeFree > 0 ? '+1 today' : 'Start today';
+  const savingsBadge =
+    safeMoneySaved >= 1000
+      ? 'Top 5% saver'
+      : safeMoneySaved >= 500
+        ? 'Top 15% saver'
+        : safeMoneySaved >= 100
+          ? 'Growing saver'
+          : 'First savings ahead';
+  const lifeHoursGained = Math.max(0, Math.round((safeCigarettesAvoided * 11) / 60));
+  const lifeBadge = lifeHoursGained > 0 ? `Life +${lifeHoursGained}h` : 'Life +0h';
 
   return (
     <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -43,12 +58,12 @@ export function StatsCards({ stats }) {
             <span className="material-symbols-outlined">calendar_today</span>
           </div>
           <span className="text-secondary font-label-sm bg-secondary-container/30 px-3 py-1 rounded-full">
-            +2 today
+            {todaysGain}
           </span>
         </div>
         <div>
           <p className="text-on-surface-variant font-label-sm mb-1">Smoke-free days</p>
-          <h3 className="font-h1 text-primary">{smokeFree}</h3>
+          <h3 className="font-h1 text-primary">{safeSmokeFree}</h3>
         </div>
       </div>
 
@@ -58,12 +73,12 @@ export function StatsCards({ stats }) {
             <span className="material-symbols-outlined">payments</span>
           </div>
           <span className="text-primary font-label-sm bg-primary-fixed/30 px-3 py-1 rounded-full">
-            Top 5% saver
+            {savingsBadge}
           </span>
         </div>
         <div>
           <p className="text-on-surface-variant font-label-sm mb-1">Money saved</p>
-          <h3 className="font-h1 text-on-surface">₹{moneySaved.toFixed(2)}</h3>
+          <h3 className="font-h1 text-on-surface">₹{safeMoneySaved.toFixed(2)}</h3>
         </div>
       </div>
 
@@ -73,12 +88,12 @@ export function StatsCards({ stats }) {
             <span className="material-symbols-outlined">block</span>
           </div>
           <span className="text-error font-label-sm bg-error-container/50 px-3 py-1 rounded-full">
-            Life +4h
+            {lifeBadge}
           </span>
         </div>
         <div>
           <p className="text-on-surface-variant font-label-sm mb-1">Cigarettes avoided</p>
-          <h3 className="font-h1 text-on-surface">{cigarettesAvoided}</h3>
+          <h3 className="font-h1 text-on-surface">{safeCigarettesAvoided}</h3>
         </div>
       </div>
     </section>
