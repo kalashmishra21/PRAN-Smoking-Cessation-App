@@ -74,7 +74,9 @@ const signup = async (req, res) => {
         email: user.email,
         quit_date: user.quit_date,
         cigarettes_per_day: user.cigarettes_per_day,
-        cost_per_pack: user.cost_per_pack
+        cost_per_pack: user.cost_per_pack,
+        profile_image: user.profile_image,
+        theme: user.theme
       }
     });
   } catch (error) {
@@ -125,7 +127,9 @@ const login = async (req, res) => {
         email: user.email,
         quit_date: user.quit_date,
         cigarettes_per_day: user.cigarettes_per_day,
-        cost_per_pack: user.cost_per_pack
+        cost_per_pack: user.cost_per_pack,
+        profile_image: user.profile_image,
+        theme: user.theme
       }
     });
   } catch (error) {

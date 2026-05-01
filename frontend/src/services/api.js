@@ -8,6 +8,20 @@ import axios from 'axios';
 
 // Base API URL - change this based on environment
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_ORIGIN = (() => {
+  try {
+    return new URL(API_BASE_URL).origin;
+  } catch {
+    return 'http://localhost:5000';
+  }
+})();
+
+export const resolveMediaUrl = (pathOrUrl) => {
+  if (!pathOrUrl) return '';
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  if (pathOrUrl.startsWith('/')) return `${API_ORIGIN}${pathOrUrl}`;
+  return `${API_ORIGIN}/${pathOrUrl}`;
+};
 
 // Create axios instance with default config
 const api = axios.create({

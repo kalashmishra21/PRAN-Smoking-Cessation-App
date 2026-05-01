@@ -6,6 +6,7 @@
  */
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { resolveMediaUrl } from '../services/api';
 
 const Sidebar = ({ activeMenu = 'dashboard' }) => {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ const Sidebar = ({ activeMenu = 'dashboard' }) => {
 
   // Get profile image URL or use default
   const profileImageUrl = user?.profile_image 
-    ? `http://localhost:5000${user.profile_image}`
+    ? resolveMediaUrl(user.profile_image)
     : 'https://ui-avatars.com/api/?name=User&background=2D5AEE&color=fff&size=128';
 
   const userName = user?.name || 'User';

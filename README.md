@@ -8,6 +8,10 @@
 
 **AI-powered smoking cessation and recovery tracking system** with intelligent BreathBot chatbot, advanced craving analytics, real-time progress tracking, and personalized quit journey support.
 
+## ✅ Live Deployment
+
+- **Frontend (Vercel)**: `https://pran-smoking-cessation-app.vercel.app`
+
 ---
 
 ## 🌟 Key Features

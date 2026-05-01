@@ -79,7 +79,6 @@ const OnboardingStep2 = () => {
 
   /**
    * Handle continue button click and form submission
-   * Logs all form data to console for debugging
    * Validates inputs and proceeds to auth page
    * Takes no parameters, returns void
    */
@@ -92,12 +91,6 @@ const OnboardingStep2 = () => {
 
     localStorage.setItem('onboardingData', JSON.stringify(payload));
 
-    console.log('Form Data:', {
-      cigarettesPerDay: formData.cigarettesPerDay,
-      costPerPiece: formData.costPerPiece,
-      quitDate: formData.quitDate,
-      calculatedSavings: calculateSavings()
-    });
     // Navigate to auth page
     navigate('/auth', { state: { onboardingData: payload } });
   };

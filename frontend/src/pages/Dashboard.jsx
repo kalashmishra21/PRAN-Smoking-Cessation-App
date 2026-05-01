@@ -23,7 +23,7 @@ let cachedDashboardData = null;
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const authenticated = isAuthenticated();
   const [dashboardData, setDashboardData] = useState(() => cachedDashboardData);
   const [loading, setLoading] = useState(() => !cachedDashboardData);

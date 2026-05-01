@@ -190,10 +190,6 @@ export function RecoveryTimeline({ milestones }) {
 export function BreathBotCard({ tip }) {
   const defaultTip = tip || "When a craving hits, remember: it's just a thought, and thoughts are like clouds. Watch them drift by without reaching for them. Take ten deep breaths.";
 
-  const handleShare = () => {
-    console.log('Share tip clicked');
-  };
-
   return (
     <div className="bg-primary text-white p-8 rounded-[2rem] card-shadow relative overflow-hidden">
       <div className="flex items-center gap-3 mb-6">
@@ -212,7 +208,7 @@ export function BreathBotCard({ tip }) {
       <div className="flex items-center justify-between">
         <span className="text-white/60 text-xs">Today's Motivation</span>
         <button
-          onClick={handleShare}
+          type="button"
           className="p-2 hover:bg-white/10 rounded-full transition-colors"
         >
           <span className="material-symbols-outlined">share</span>
@@ -228,13 +224,7 @@ export function BreathBotCard({ tip }) {
  * ActionCard - Quick action card for logging cravings
  */
 export function ActionCard({ onLogCraving }) {
-  const handleClick = () => {
-    if (onLogCraving) {
-      onLogCraving();
-    } else {
-      console.log('Log a craving now clicked');
-    }
-  };
+  const handleClick = () => onLogCraving?.();
 
   return (
     <div className="bg-white p-8 rounded-[2rem] card-shadow border-2 border-dashed border-primary/20 flex flex-col items-center text-center">
@@ -308,10 +298,6 @@ export function Achievements({ achievements }) {
  * ExtraCards - Additional activity cards
  */
 export function ExtraCards() {
-  const handleJoinLive = () => {
-    console.log('Join Live clicked');
-  };
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="bg-surface-container-highest/30 p-8 rounded-[2rem] border border-outline-variant/30 relative overflow-hidden group">
@@ -321,7 +307,7 @@ export function ExtraCards() {
             Guided meditation for acute cravings. Starting in 5 mins.
           </p>
           <button
-            onClick={handleJoinLive}
+            type="button"
             className="px-6 py-2 bg-white text-primary font-label-sm rounded-xl border border-primary/20 hover:bg-primary hover:text-white transition-all"
           >
             Join Live

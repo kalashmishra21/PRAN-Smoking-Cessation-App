@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { resolveMediaUrl, userAPI } from '../services/api';
 
 /**
  * ProfileCard Component - User profile section with avatar, name, email, and input fields
@@ -16,7 +17,7 @@ import { useTheme } from '../context/ThemeContext';
  */
 export function ProfileCard({ formData, onChange, onImageUpload, uploadingImage, profileImage }) {
   const profileImageUrl = profileImage 
-    ? `http://localhost:5000${profileImage}`
+    ? resolveMediaUrl(profileImage)
     : 'https://lh3.googleusercontent.com/aida-public/AB6AXuAgK7vFHhCDhzscOKShLQL-vc28lF7KWzP61qxR5OfDKN0At1yWg-3pnujpR_kNiCR8Qfa0A25eXKN_FyvMtYe0arE-dSVqKEyNBH7DmFsP_R4rylW5mGuvAU5DgNVAwq77fL-N2tPmEGnWOjEj8y_bmG4zRebuvBaRSlbeaX4LMqv_-8RPDU_AUesKC8N-74Ftldva4DU_pF1MAFP7WyfURgRZBqL_IwuYxVpCR3_BH7HEElmvWcp7_2aS291SekBpeOBwJEscnlc';
 
   return (
@@ -192,7 +193,7 @@ export function QuitJourneyCard({ formData, onChange }) {
  * Returns a white rounded card with theme toggle switch
  */
 export function ThemeToggleCard() {
-  const { theme, toggleTheme, isDark, setUserTheme } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
   const [saving, setSaving] = useState(false);
 
   const handleToggle = async () => {
@@ -204,7 +205,6 @@ export function ThemeToggleCard() {
     // Save to database
     setSaving(true);
     try {
-      const { userAPI } = await import('../services/api');
       await userAPI.updateProfile({ theme: newTheme });
       
       // Update user in localStorage
@@ -290,16 +290,6 @@ export function ProPlanCard() {
     'Stress Pattern Analysis',
   ];
 
-  /**
-   * Handle upgrade button click
-   * Logs action to console for debugging
-   * Takes no parameters
-   * Returns void, will navigate to upgrade flow later
-   */
-  const handleUpgrade = () => {
-    console.log('Upgrade Now clicked');
-  };
-
   return (
     <section
       className="rounded-[32px] p-8 shadow-xl flex flex-col justify-between h-full"
@@ -334,7 +324,7 @@ export function ProPlanCard() {
 
         {/* Upgrade CTA button */}
         <button
-          onClick={handleUpgrade}
+          type="button"
           className="w-full py-4 bg-white text-[#2D5AEE] font-bold rounded-2xl shadow-lg hover:bg-opacity-95 active:scale-95 transition-all mt-2"
         >
           Upgrade Now

@@ -5,6 +5,7 @@
  */
 import { useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { resolveMediaUrl } from '../services/api';
 
 /**
  * ChatBubble - Single chat message bubble for bot or user
@@ -16,7 +17,7 @@ export function ChatBubble({ message }) {
 
   // Get user profile image
   const userAvatar = user?.profile_image 
-    ? `http://localhost:5000${user.profile_image}`
+    ? resolveMediaUrl(user.profile_image)
     : 'https://ui-avatars.com/api/?name=User&background=2D5AEE&color=fff&size=128';
 
   if (isBot) {
