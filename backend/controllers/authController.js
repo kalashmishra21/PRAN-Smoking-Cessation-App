@@ -7,6 +7,10 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+const normalizeEmail = (email = '') => email.trim().toLowerCase();
+
 /**
  * User registration controller function
  * Takes name, email, password, quit_date, cigarettes_per_day from request body
@@ -15,21 +19,41 @@ const jwt = require('jsonwebtoken');
  */
 const signup = async (req, res) => {
   try {
-    const { name, email, password, quit_date, cigarettes_per_day } = req.body;
+    const { name, email, password, quit_date, cigarettes_per_day, cost_per_pack } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      return res.status(400).json({ message: 'Please enter a valid email address' });
+    }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists with this email' });
+    }
+
+    const quitDate = quit_date ? new Date(quit_date) : new Date();
+    const cigarettesPerDay = Number(cigarettes_per_day ?? 0);
+    const costPerPack = Number(cost_per_pack ?? 10);
+
+    if (Number.isNaN(quitDate.getTime())) {
+      return res.status(400).json({ message: 'Please enter a valid quit date' });
+    }
+    if (Number.isNaN(cigarettesPerDay) || cigarettesPerDay < 0) {
+      return res.status(400).json({ message: 'Cigarettes per day must be 0 or more' });
+    }
+    if (Number.isNaN(costPerPack) || costPerPack < 0) {
+      return res.status(400).json({ message: 'Cost per piece must be 0 or more' });
     }
 
     // Create new user
     const user = new User({
       name,
-      email,
+      email: normalizedEmail,
       password_hash: password, // Will be hashed by pre-save middleware
-      quit_date: new Date(quit_date),
-      cigarettes_per_day
+      quit_date: quitDate,
+      cigarettes_per_day: cigarettesPerDay,
+      cost_per_pack: costPerPack
     });
 
     await user.save();
@@ -49,7 +73,8 @@ const signup = async (req, res) => {
         name: user.name,
         email: user.email,
         quit_date: user.quit_date,
-        cigarettes_per_day: user.cigarettes_per_day
+        cigarettes_per_day: user.cigarettes_per_day,
+        cost_per_pack: user.cost_per_pack
       }
     });
   } catch (error) {
@@ -66,9 +91,14 @@ const signup = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      return res.status(400).json({ message: 'Please enter a valid email address' });
+    }
 
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
@@ -94,7 +124,8 @@ const login = async (req, res) => {
         name: user.name,
         email: user.email,
         quit_date: user.quit_date,
-        cigarettes_per_day: user.cigarettes_per_day
+        cigarettes_per_day: user.cigarettes_per_day,
+        cost_per_pack: user.cost_per_pack
       }
     });
   } catch (error) {

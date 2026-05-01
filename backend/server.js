@@ -7,6 +7,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const dns = require('dns');
 require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
@@ -21,16 +22,43 @@ const path = require('path');
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+const connectWithRetry = async (retries = 5, delayMs = 5000) => {
+  const mongoUri = process.env.MONGODB_URI;
+
+  if (!mongoUri) {
+    throw new Error('MONGODB_URI is missing in backend/.env');
+  }
+
+  // Use public resolvers first to reduce local DNS-related SRV failures on Atlas URIs.
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+
+  for (let attempt = 1; attempt <= retries; attempt += 1) {
+    try {
+      await mongoose.connect(mongoUri, {
+        serverSelectionTimeoutMS: 15000,
+        family: 4,
+      });
+      console.log('Connected to MongoDB');
+      return;
+    } catch (err) {
+      console.error(`MongoDB connection attempt ${attempt}/${retries} failed:`, err.message);
+      if (attempt === retries) throw err;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+};
+
+connectWithRetry().catch((err) => console.error('MongoDB connection error:', err));
 
 // Routes
 app.use('/api/auth', authRoutes);

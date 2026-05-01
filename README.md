@@ -190,7 +190,7 @@ JWT_SECRET=your_secure_jwt_secret_key_here
 JWT_EXPIRE=7d
 
 # CORS Configuration (optional)
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:5173
 ```
 
 **Important:** 
@@ -224,7 +224,7 @@ App will open on `http://localhost:3000`
 #### 6. Access the Application
 
 Open your browser and navigate to:
-- **Frontend:** `http://localhost:3000`
+- **Frontend:** `http://localhost:5173`
 - **Backend API:** `http://localhost:5000/api`
 
 ---

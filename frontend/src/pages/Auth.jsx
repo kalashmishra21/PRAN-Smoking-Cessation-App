@@ -5,8 +5,8 @@
  * Connects to backend API for authentication
  * Returns split-screen layout with branding panel and auth form
  */
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { LeftPanel, Tabs, AuthForm } from '../components/AuthComponents';
@@ -14,6 +14,7 @@ import { authAPI } from '../services/api';
 
 const Auth = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
   const { syncThemeWithUser, setUserTheme } = useTheme();
 
@@ -32,21 +33,25 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const validateEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim());
+
+  const onboardingData = useMemo(() => {
+    if (location.state?.onboardingData) return location.state.onboardingData;
+    try {
+      const stored = localStorage.getItem('onboardingData');
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  }, [location.state]);
+
   /**
    * Validate password strength
-   * Checks for minimum 8 characters, uppercase, lowercase, and number
-   * Takes password string as parameter
-   * Returns object with isValid boolean and error message
+   * Keeps rules practical: minimum length and at least one number
    */
   const validatePassword = (password) => {
-    if (password.length < 8) {
-      return { isValid: false, message: 'Password must be at least 8 characters long' };
-    }
-    if (!/[A-Z]/.test(password)) {
-      return { isValid: false, message: 'Password must contain at least one uppercase letter' };
-    }
-    if (!/[a-z]/.test(password)) {
-      return { isValid: false, message: 'Password must contain at least one lowercase letter' };
+    if (password.length < 6) {
+      return { isValid: false, message: 'Password must be at least 6 characters long' };
     }
     if (!/[0-9]/.test(password)) {
       return { isValid: false, message: 'Password must contain at least one number' };
@@ -68,6 +73,11 @@ const Auth = () => {
     // Prevent multiple submissions
     if (loading) return;
     
+    if (!validateEmail(email)) {
+      alert('Please enter a valid email address (example: name@example.com)');
+      return;
+    }
+
     // Validation for signup
     if (activeTab === 'signup') {
       if (!name.trim()) {
@@ -88,26 +98,20 @@ const Auth = () => {
       }
     }
     
-    // Validation for login - also check password strength
-    if (activeTab === 'login') {
-      const passwordCheck = validatePassword(password);
-      if (!passwordCheck.isValid) {
-        alert(passwordCheck.message);
-        return;
-      }
-    }
-    
     setLoading(true);
     
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+
       if (activeTab === 'signup') {
         // Signup API call
         const response = await authAPI.signup({
           name,
-          email,
+          email: normalizedEmail,
           password,
-          quit_date: new Date().toISOString().split('T')[0], // Default to today
-          cigarettes_per_day: 10 // Default value, can be updated later
+          quit_date: onboardingData.quit_date || new Date().toISOString().split('T')[0],
+          cigarettes_per_day: Number(onboardingData.cigarettes_per_day ?? 0),
+          cost_per_pack: Number(onboardingData.cost_per_pack ?? 0),
         });
         
         // Check if guest theme exists
@@ -126,13 +130,14 @@ const Auth = () => {
         
         // Store token and user data using AuthContext
         login(response.user, response.token);
+        localStorage.removeItem('onboardingData');
         
         alert('Account created successfully!');
         navigate('/dashboard');
       } else {
         // Login API call
         const response = await authAPI.login({
-          email,
+          email: normalizedEmail,
           password
         });
         

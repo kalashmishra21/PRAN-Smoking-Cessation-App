@@ -76,6 +76,14 @@ const OnboardingStep2 = () => {
    * Takes no parameters, returns void
    */
   const handleContinue = () => {
+    const payload = {
+      cigarettes_per_day: Number(formData.cigarettesPerDay) || 0,
+      cost_per_pack: Number(formData.costPerPiece) || 0,
+      quit_date: formData.quitDate || '',
+    };
+
+    localStorage.setItem('onboardingData', JSON.stringify(payload));
+
     console.log('Form Data:', {
       cigarettesPerDay: formData.cigarettesPerDay,
       costPerPiece: formData.costPerPiece,
@@ -83,7 +91,7 @@ const OnboardingStep2 = () => {
       calculatedSavings: calculateSavings()
     });
     // Navigate to auth page
-    navigate('/auth');
+    navigate('/auth', { state: { onboardingData: payload } });
   };
 
   const calculatedSavings = calculateSavings();
