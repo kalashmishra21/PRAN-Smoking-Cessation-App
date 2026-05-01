@@ -22,6 +22,7 @@ import { dashboardAPI } from '../services/api';
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const authenticated = isAuthenticated();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +35,7 @@ const Dashboard = () => {
     // Wait for auth to load first
     if (authLoading) return;
     
-    if (!isAuthenticated()) {
+    if (!authenticated) {
       navigate('/auth', { replace: true });
       return;
     }
@@ -53,7 +54,7 @@ const Dashboard = () => {
     };
 
     fetchDashboardData();
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [authenticated, authLoading, navigate]);
 
   /**
    * Handle log craving action from action card
@@ -123,18 +124,18 @@ const Dashboard = () => {
         <footer className="mt-24 border-t border-slate-100 py-12 flex flex-col md:flex-row justify-between items-center gap-6">
           <span className="text-lg font-bold text-slate-400 font-h3">PRAN</span>
           <div className="flex gap-8">
-            <a className="text-xs font-label-sm text-slate-400 hover:text-[#2D5AEE] transition-colors" href="#">
+            <button type="button" className="text-xs font-label-sm text-slate-400 hover:text-[#2D5AEE] transition-colors">
               Privacy
-            </a>
-            <a className="text-xs font-label-sm text-slate-400 hover:text-[#2D5AEE] transition-colors" href="#">
+            </button>
+            <button type="button" className="text-xs font-label-sm text-slate-400 hover:text-[#2D5AEE] transition-colors">
               Terms
-            </a>
-            <a className="text-xs font-label-sm text-slate-400 hover:text-[#2D5AEE] transition-colors" href="#">
+            </button>
+            <button type="button" className="text-xs font-label-sm text-slate-400 hover:text-[#2D5AEE] transition-colors">
               Support
-            </a>
-            <a className="text-xs font-label-sm text-slate-400 hover:text-[#2D5AEE] transition-colors" href="#">
+            </button>
+            <button type="button" className="text-xs font-label-sm text-slate-400 hover:text-[#2D5AEE] transition-colors">
               Medical Disclaimer
-            </a>
+            </button>
           </div>
           <p className="text-xs text-slate-500 font-body-md">
             © 2024 PRAN Health. Clinically validated recovery.

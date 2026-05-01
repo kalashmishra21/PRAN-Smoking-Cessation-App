@@ -111,9 +111,9 @@ export function InputField({
           {label}
         </label>
         {showForgot && (
-          <a className="text-xs font-semibold text-primary hover:underline" href="#">
+          <button type="button" className="text-xs font-semibold text-primary hover:underline">
             Forgot?
-          </a>
+          </button>
         )}
       </div>
       
@@ -240,9 +240,9 @@ export function AuthForm({
 
       <p className="text-center text-on-surface-variant text-sm mt-stack-lg">
         Protected by reCAPTCHA and PRAN{' '}
-        <a className="text-primary hover:underline" href="#">
+        <button type="button" className="text-primary hover:underline">
           Privacy Policy
-        </a>
+        </button>
         .
       </p>
     </div>

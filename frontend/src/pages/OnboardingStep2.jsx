@@ -12,12 +12,13 @@ import { useAuth } from '../context/AuthContext';
 const OnboardingStep2 = () => {
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const authenticated = isAuthenticated();
 
   useEffect(() => {
-    if (!authLoading && isAuthenticated()) {
+    if (!authLoading && authenticated) {
       navigate('/dashboard', { replace: true });
     }
-  }, [authLoading, isAuthenticated, navigate]);
+  }, [authLoading, authenticated, navigate]);
 
   /**
    * Form state management for user inputs
@@ -73,8 +74,7 @@ const OnboardingStep2 = () => {
    * Takes no parameters, returns void
    */
   const handleBack = () => {
-    console.log('Back button clicked');
-    // Navigate to previous step (Step 1)
+    navigate(-1);
   };
 
   /**
@@ -138,15 +138,15 @@ const OnboardingStep2 = () => {
             © 2024 PRAN Health. Clinically validated recovery.
           </div>
           <div className="flex gap-6">
-            <a className="text-slate-400 dark:text-gray-500 hover:text-[#2D5AEE] transition-colors text-xs" href="#">
+            <button type="button" className="text-slate-400 dark:text-gray-500 hover:text-[#2D5AEE] transition-colors text-xs">
               Privacy
-            </a>
-            <a className="text-slate-400 dark:text-gray-500 hover:text-[#2D5AEE] transition-colors text-xs" href="#">
+            </button>
+            <button type="button" className="text-slate-400 dark:text-gray-500 hover:text-[#2D5AEE] transition-colors text-xs">
               Terms
-            </a>
-            <a className="text-slate-400 dark:text-gray-500 hover:text-[#2D5AEE] transition-colors text-xs" href="#">
+            </button>
+            <button type="button" className="text-slate-400 dark:text-gray-500 hover:text-[#2D5AEE] transition-colors text-xs">
               Medical Disclaimer
-            </a>
+            </button>
           </div>
         </div>
       </footer>

@@ -19,6 +19,7 @@ import { cravingAPI, dashboardAPI } from '../services/api';
 
 const Insights = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const authenticated = isAuthenticated();
   const navigate = useNavigate();
   const [cravingsData, setCravingsData] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
@@ -26,17 +27,17 @@ const Insights = () => {
 
   // Redirect if not authenticated (after auth loading completes)
   useEffect(() => {
-    if (!authLoading && !isAuthenticated()) {
+    if (!authLoading && !authenticated) {
       navigate('/auth', { replace: true });
     }
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [authenticated, authLoading, navigate]);
 
   // Fetch data on mount (only if authenticated)
   useEffect(() => {
-    if (!authLoading && isAuthenticated()) {
+    if (!authLoading && authenticated) {
       fetchInsightsData();
     }
-  }, [authLoading, isAuthenticated]);
+  }, [authLoading, authenticated]);
 
   /**
    * Fetch cravings and dashboard data for insights
@@ -129,13 +130,13 @@ const Insights = () => {
             <span className="text-lg font-bold text-slate-400 font-h3">PRAN</span>
             <div className="flex flex-wrap justify-center gap-8">
               {['Privacy', 'Terms', 'Support', 'Medical Disclaimer'].map((link) => (
-                <a
+                <button
                   key={link}
-                  href="#"
+                  type="button"
                   className="text-xs text-slate-400 hover:text-[#2D5AEE] transition-colors font-medium"
                 >
                   {link}
-                </a>
+                </button>
               ))}
             </div>
             <p className="text-xs text-slate-500">© 2024 PRAN Health. Clinically validated recovery.</p>

@@ -16,6 +16,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
+  const authenticated = isAuthenticated();
   const { syncThemeWithUser, setUserTheme } = useTheme();
 
   /**
@@ -46,10 +47,10 @@ const Auth = () => {
   }, [location.state]);
 
   useEffect(() => {
-    if (!authLoading && isAuthenticated()) {
+    if (!authLoading && authenticated) {
       navigate('/dashboard', { replace: true });
     }
-  }, [authLoading, isAuthenticated, navigate]);
+  }, [authLoading, authenticated, navigate]);
 
   /**
    * Validate password strength
@@ -221,15 +222,15 @@ const Auth = () => {
           </p>
         </div>
         <div className="pointer-events-auto flex gap-6 mt-4 md:mt-0">
-          <a className="text-xs text-on-surface-variant/60 hover:text-primary transition-colors font-label-sm" href="#">
+          <button type="button" className="text-xs text-on-surface-variant/60 hover:text-primary transition-colors font-label-sm">
             Terms
-          </a>
-          <a className="text-xs text-on-surface-variant/60 hover:text-primary transition-colors font-label-sm" href="#">
+          </button>
+          <button type="button" className="text-xs text-on-surface-variant/60 hover:text-primary transition-colors font-label-sm">
             Privacy
-          </a>
-          <a className="text-xs text-on-surface-variant/60 hover:text-primary transition-colors font-label-sm" href="#">
+          </button>
+          <button type="button" className="text-xs text-on-surface-variant/60 hover:text-primary transition-colors font-label-sm">
             Support
-          </a>
+          </button>
         </div>
       </footer>
     </div>

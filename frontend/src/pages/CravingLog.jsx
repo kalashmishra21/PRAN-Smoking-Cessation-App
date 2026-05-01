@@ -17,6 +17,7 @@ import { cravingAPI } from '../services/api';
 
 const CravingLog = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const authenticated = isAuthenticated();
   const navigate = useNavigate();
   const [cravingLogs, setCravingLogs] = useState([]);
   const [rawCravings, setRawCravings] = useState([]); // Keep raw data for stats
@@ -39,17 +40,17 @@ const CravingLog = () => {
 
   // Redirect if not authenticated (after auth loading completes)
   useEffect(() => {
-    if (!authLoading && !isAuthenticated()) {
+    if (!authLoading && !authenticated) {
       navigate('/auth', { replace: true });
     }
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [authenticated, authLoading, navigate]);
 
   // Fetch cravings on mount (only if authenticated)
   useEffect(() => {
-    if (!authLoading && isAuthenticated()) {
+    if (!authLoading && authenticated) {
       fetchCravings();
     }
-  }, [authLoading, isAuthenticated]);
+  }, [authLoading, authenticated]);
 
   /**
    * Fetch all cravings from backend with optional filters
@@ -431,10 +432,10 @@ const CravingLog = () => {
         <div className="flex flex-col md:flex-row justify-between items-center py-12 px-8">
           <div className="text-lg font-bold text-slate-400 mb-4 md:mb-0">PRAN Health</div>
           <div className="flex gap-6 mb-4 md:mb-0">
-            <a className="text-slate-400 hover:text-[#2D5AEE] text-xs font-['Manrope'] transition-all" href="#">Privacy</a>
-            <a className="text-slate-400 hover:text-[#2D5AEE] text-xs font-['Manrope'] transition-all" href="#">Terms</a>
-            <a className="text-slate-400 hover:text-[#2D5AEE] text-xs font-['Manrope'] transition-all" href="#">Support</a>
-            <a className="text-slate-400 hover:text-[#2D5AEE] text-xs font-['Manrope'] transition-all" href="#">Medical Disclaimer</a>
+            <button type="button" className="text-slate-400 hover:text-[#2D5AEE] text-xs font-['Manrope'] transition-all">Privacy</button>
+            <button type="button" className="text-slate-400 hover:text-[#2D5AEE] text-xs font-['Manrope'] transition-all">Terms</button>
+            <button type="button" className="text-slate-400 hover:text-[#2D5AEE] text-xs font-['Manrope'] transition-all">Support</button>
+            <button type="button" className="text-slate-400 hover:text-[#2D5AEE] text-xs font-['Manrope'] transition-all">Medical Disclaimer</button>
           </div>
           <p className="font-['Manrope'] text-xs text-slate-500">© 2024 PRAN Health. Clinically validated recovery.</p>
         </div>
