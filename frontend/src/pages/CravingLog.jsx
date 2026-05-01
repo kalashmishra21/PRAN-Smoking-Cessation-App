@@ -111,11 +111,14 @@ const CravingLog = () => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+    // Clock skew between client and server can make diff negative.
+    const safeDiffMs = Math.max(0, diffMs);
+    const diffMins = Math.floor(safeDiffMs / 60000);
+    const diffHours = Math.floor(safeDiffMs / 3600000);
+    const diffDays = Math.floor(safeDiffMs / 86400000);
 
     if (diffMins < 60) {
+      if (diffMins === 0) return 'Just now';
       return `${diffMins} minutes ago`;
     } else if (diffHours < 24) {
       return `Today, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
