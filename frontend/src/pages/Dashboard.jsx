@@ -19,12 +19,14 @@ import {
 } from '../components/DashboardComponents';
 import { dashboardAPI } from '../services/api';
 
+let cachedDashboardData = null;
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const authenticated = isAuthenticated();
-  const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState(() => cachedDashboardData);
+  const [loading, setLoading] = useState(() => !cachedDashboardData);
 
   /**
    * Fetch dashboard data from API on component mount
@@ -40,20 +42,21 @@ const Dashboard = () => {
       return;
     }
 
-    const fetchDashboardData = async () => {
+    const fetchDashboardData = async ({ background = false } = {}) => {
       try {
-        setLoading(true);
+        if (!background) setLoading(true);
         const data = await dashboardAPI.getDashboard();
         setDashboardData(data);
+        cachedDashboardData = data;
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
         alert('Failed to load dashboard data');
       } finally {
-        setLoading(false);
+        if (!background) setLoading(false);
       }
     };
 
-    fetchDashboardData();
+    fetchDashboardData({ background: Boolean(cachedDashboardData) });
   }, [authenticated, authLoading, navigate]);
 
   /**

@@ -12,11 +12,13 @@ import { ProfileCard, QuitJourneyCard, ThemeToggleCard, ActionButtons } from '..
 import NotificationCard from '../components/NotificationCard';
 import { userAPI } from '../services/api';
 
+let cachedSettingsProfile = null;
+
 const Settings = () => {
   const navigate = useNavigate();
   const { user, logout, updateUser, isAuthenticated, loading: authLoading } = useAuth();
   const authenticated = isAuthenticated();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !cachedSettingsProfile);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -24,7 +26,7 @@ const Settings = () => {
    * Form state for profile and journey fields
    * Initialized with user data from AuthContext
    */
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => cachedSettingsProfile || {
     name: '',
     email: '',
     quit_date: '',
@@ -52,30 +54,32 @@ const Settings = () => {
   // Fetch user profile on mount (only if authenticated)
   useEffect(() => {
     if (!authLoading && authenticated) {
-      fetchProfile();
+      fetchProfile({ background: Boolean(cachedSettingsProfile) });
     }
   }, [authLoading, authenticated]);
 
   /**
    * Fetch user profile from backend
    */
-  const fetchProfile = async () => {
+  const fetchProfile = async ({ background = false } = {}) => {
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
       const response = await userAPI.getProfile();
       
-      setFormData({
+      const nextProfile = {
         name: response.user.name || '',
         email: response.user.email || '',
         quit_date: response.user.quit_date ? response.user.quit_date.split('T')[0] : '',
         cigarettes_per_day: response.user.cigarettes_per_day || 0,
         cost_per_pack: response.user.cost_per_pack || 0,
         motivation: response.user.motivation || '',
-      });
+      };
+      setFormData(nextProfile);
+      cachedSettingsProfile = nextProfile;
     } catch (err) {
       console.error('Failed to fetch profile:', err);
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   };
 
@@ -151,6 +155,11 @@ const Settings = () => {
       
       // Update user in AuthContext
       updateUser(response.user);
+      cachedSettingsProfile = {
+        ...formData,
+        name: response.user.name || formData.name,
+        email: response.user.email || formData.email,
+      };
       
       alert('Settings saved successfully!');
     } catch (err) {

@@ -15,6 +15,8 @@ import {
 } from '../components/BreathBotComponents';
 import { chatAPI } from '../services/api';
 
+let cachedMessages = null;
+
 /**
  * Formats the current time as HH:MM AM/PM string
  * Used to timestamp new messages when they are sent
@@ -30,33 +32,34 @@ const getCurrentTime = () => {
 
 const BreathBot = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const authenticated = isAuthenticated();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => cachedMessages || []);
   const [inputValue, setInputValue] = useState('');
   const [isBotTyping, setIsBotTyping] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !cachedMessages);
 
   // Redirect if not authenticated (after auth loading completes)
   useEffect(() => {
-    if (!authLoading && !isAuthenticated()) {
+    if (!authLoading && !authenticated) {
       navigate('/auth', { replace: true });
     }
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [authenticated, authLoading, navigate]);
 
   // Fetch chat history on mount (only if authenticated)
   useEffect(() => {
-    if (!authLoading && isAuthenticated()) {
-      fetchChatHistory();
+    if (!authLoading && authenticated) {
+      fetchChatHistory({ background: Boolean(cachedMessages) });
     }
-  }, [authLoading, isAuthenticated]);
+  }, [authLoading, authenticated]);
 
   /**
    * Fetch chat history from backend
    * Loads previous conversation messages
    */
-  const fetchChatHistory = async () => {
+  const fetchChatHistory = async ({ background = false } = {}) => {
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
       const response = await chatAPI.getChatHistory();
       
       // Transform backend data to match UI format
@@ -68,19 +71,22 @@ const BreathBot = () => {
       }));
       
       setMessages(formattedMessages);
+      cachedMessages = formattedMessages;
     } catch (err) {
       console.error('Failed to fetch chat history:', err);
       // Start with welcome message if no history
-      setMessages([
+      const fallbackMessages = [
         {
           id: 1,
           sender: 'bot',
           text: "Hello! I'm BreathBot, your recovery companion. Quitting is a journey of a thousand breaths, and I'm here for every single one. How are you feeling right now?",
           time: getCurrentTime(),
         }
-      ]);
+      ];
+      setMessages(fallbackMessages);
+      cachedMessages = fallbackMessages;
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   };
 

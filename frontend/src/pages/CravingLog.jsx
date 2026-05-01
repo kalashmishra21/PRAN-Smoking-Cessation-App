@@ -15,13 +15,15 @@ import {
 } from '../components/CravingLogComponents';
 import { cravingAPI } from '../services/api';
 
+let cachedCravingState = null;
+
 const CravingLog = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const authenticated = isAuthenticated();
   const navigate = useNavigate();
-  const [cravingLogs, setCravingLogs] = useState([]);
-  const [rawCravings, setRawCravings] = useState([]); // Keep raw data for stats
-  const [loading, setLoading] = useState(true);
+  const [cravingLogs, setCravingLogs] = useState(() => cachedCravingState?.cravingLogs || []);
+  const [rawCravings, setRawCravings] = useState(() => cachedCravingState?.rawCravings || []); // Keep raw data for stats
+  const [loading, setLoading] = useState(() => !cachedCravingState);
   const [error, setError] = useState(null);
   const [showLogForm, setShowLogForm] = useState(false);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
@@ -48,7 +50,7 @@ const CravingLog = () => {
   // Fetch cravings on mount (only if authenticated)
   useEffect(() => {
     if (!authLoading && authenticated) {
-      fetchCravings();
+      fetchCravings({}, { background: Boolean(cachedCravingState) });
     }
   }, [authLoading, authenticated]);
 
@@ -56,9 +58,10 @@ const CravingLog = () => {
    * Fetch all cravings from backend with optional filters
    * Updates cravingLogs state with formatted data
    */
-  const fetchCravings = async (filterParams = {}) => {
+  const fetchCravings = async (filterParams = {}, options = {}) => {
+    const { background = false } = options;
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
       const response = await cravingAPI.getCravings(filterParams);
       
       // Check if response has cravings array
@@ -86,6 +89,10 @@ const CravingLog = () => {
       }));
       
       setCravingLogs(formattedLogs);
+      cachedCravingState = {
+        cravingLogs: formattedLogs,
+        rawCravings: response.cravings,
+      };
       setError(null);
     } catch (err) {
       console.error('Failed to fetch cravings:', err);
@@ -93,7 +100,7 @@ const CravingLog = () => {
       setCravingLogs([]); // Set empty array on error
       setRawCravings([]);
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   };
 

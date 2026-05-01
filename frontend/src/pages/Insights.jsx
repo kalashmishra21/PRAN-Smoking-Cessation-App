@@ -17,13 +17,15 @@ import {
 } from '../components/InsightsComponents';
 import { cravingAPI, dashboardAPI } from '../services/api';
 
+let cachedInsightsState = null;
+
 const Insights = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const authenticated = isAuthenticated();
   const navigate = useNavigate();
-  const [cravingsData, setCravingsData] = useState([]);
-  const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [cravingsData, setCravingsData] = useState(() => cachedInsightsState?.cravingsData || []);
+  const [dashboardData, setDashboardData] = useState(() => cachedInsightsState?.dashboardData || null);
+  const [loading, setLoading] = useState(() => !cachedInsightsState);
 
   // Redirect if not authenticated (after auth loading completes)
   useEffect(() => {
@@ -35,16 +37,16 @@ const Insights = () => {
   // Fetch data on mount (only if authenticated)
   useEffect(() => {
     if (!authLoading && authenticated) {
-      fetchInsightsData();
+      fetchInsightsData({ background: Boolean(cachedInsightsState) });
     }
   }, [authLoading, authenticated]);
 
   /**
    * Fetch cravings and dashboard data for insights
    */
-  const fetchInsightsData = async () => {
+  const fetchInsightsData = async ({ background = false } = {}) => {
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
       const [cravingsResponse, dashboardResponse] = await Promise.all([
         cravingAPI.getCravings(),
         dashboardAPI.getDashboard()
@@ -52,10 +54,14 @@ const Insights = () => {
       
       setCravingsData(cravingsResponse.cravings || []);
       setDashboardData(dashboardResponse);
+      cachedInsightsState = {
+        cravingsData: cravingsResponse.cravings || [],
+        dashboardData: dashboardResponse,
+      };
     } catch (err) {
       console.error('Failed to fetch insights data:', err);
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   };
 

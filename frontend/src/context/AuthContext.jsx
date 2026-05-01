@@ -3,41 +3,53 @@
  * Provides user authentication state and methods across the app
  * Manages login, logout, and user data persistence
  */
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [authState, setAuthState] = useState(() => {
+    try {
+      const storedToken = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+      if (storedToken && storedUser) {
+        return {
+          user: JSON.parse(storedUser),
+          token: storedToken,
+          loading: false,
+        };
+      }
+    } catch (error) {
+      console.error('Failed to restore auth state:', error);
+    }
+
+    return {
+      user: null,
+      token: null,
+      loading: false,
+    };
+  });
   const navigate = useNavigate();
 
-  // Load user from localStorage on mount
-  useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
-  }, []);
-
   // Login function
-  const login = (userData, authToken) => {
-    setUser(userData);
-    setToken(authToken);
+  const login = useCallback((userData, authToken) => {
+    setAuthState({
+      user: userData,
+      token: authToken,
+      loading: false,
+    });
     localStorage.setItem('token', authToken);
     localStorage.setItem('user', JSON.stringify(userData));
-  };
+  }, []);
 
   // Logout function
-  const logout = () => {
-    setUser(null);
-    setToken(null);
+  const logout = useCallback(() => {
+    setAuthState({
+      user: null,
+      token: null,
+      loading: false,
+    });
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     
@@ -47,28 +59,28 @@ export const AuthProvider = ({ children }) => {
     window.dispatchEvent(event);
     
     navigate('/auth');
-  };
+  }, [navigate]);
 
   // Update user data
-  const updateUser = (userData) => {
-    setUser(userData);
+  const updateUser = useCallback((userData) => {
+    setAuthState((prev) => ({ ...prev, user: userData }));
     localStorage.setItem('user', JSON.stringify(userData));
-  };
+  }, []);
 
   // Check if user is authenticated
-  const isAuthenticated = () => {
-    return !!token && !!user;
-  };
+  const isAuthenticated = useCallback(() => {
+    return !!authState.token && !!authState.user;
+  }, [authState.token, authState.user]);
 
-  const value = {
-    user,
-    token,
-    loading,
+  const value = useMemo(() => ({
+    user: authState.user,
+    token: authState.token,
+    loading: authState.loading,
     login,
     logout,
     updateUser,
     isAuthenticated,
-  };
+  }), [authState.loading, authState.token, authState.user, isAuthenticated, login, logout, updateUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
